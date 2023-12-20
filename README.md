@@ -158,7 +158,7 @@ Untuk lebih detail nya bisa kunjungi disini :
 https://docs.spring.io/spring-boot/docs/current/api/org/springframework/boot/test/context/SpringBootTest.WebEnvironment.html
 
 
-* Mengambil port dari webEnvironment
+* Mengambil port dari webEnvironment  
 Untuk mengambil port dari @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT) kita bisa menggunakan annotation @LocalServerPort.  
 
 ``` java
