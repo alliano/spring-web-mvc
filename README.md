@@ -14,7 +14,7 @@ Semua logic Spring Web Mvc, di atur oleh sebuah servlet dengan nama DispatcherSe
 DispatcherServlet ini adalah gerbang utama masuk keluarnya Request pada Spring Web MVC.  
   
 Jadi Request akan masuk ke DispatcherServlet lalu [DispatcherServlet](https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/web/servlet/DispatcherServlet.html) akan mendelegasikan atau meneruskan request tersebut ke Controller.  
-![DispatcherServlet-Controller](../spring-web-mvc/target/classes/images/DispatcherServlet-Controller.jpg)
+![DispatcherServlet-Controller](./src/main/resources/images/DispatcherServlet-Controller.jpg)
 
 # Controller
 Untuk membuat contloler di Spring Web MVC kita bisa menggunakan annotation [@Controller](https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/stereotype/Controller.html).  
