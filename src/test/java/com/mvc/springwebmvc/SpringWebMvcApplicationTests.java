@@ -6,7 +6,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.servlet.MockMvc;
-
 import com.mvc.springwebmvc.services.GreetingService;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -49,5 +48,22 @@ class SpringWebMvcApplicationTests {
 		String greet1 = this.gretingService.greet(null);
 		String greet2 = this.gretingService.greet(name);
 		Assertions.assertArrayEquals(new String[]{"Assalamuallikum Brouther...", "Assalamuallikum ya ".concat(name)}, new String[]{greet1, greet2});
+	}
+
+	@Test
+	public void testUserController() throws Exception {
+		this.mockMvc.perform(
+			get("/user/hello")
+		).andExpectAll(
+			status().isOk(),
+			content().string(Matchers.containsString("Hello User..."))
+		);
+
+		this.mockMvc.perform(
+			post("/user/save")
+		).andExpectAll(
+			status().isOk(),
+			content().string(Matchers.containsString("SAVING......."))
+		);
 	}
 }
