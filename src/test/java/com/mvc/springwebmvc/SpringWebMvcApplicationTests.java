@@ -66,4 +66,26 @@ class SpringWebMvcApplicationTests {
 			content().string(Matchers.containsString("SAVING......."))
 		);
 	}
+
+	@Test
+	public void testRequestParam() throws Exception {
+		this.mockMvc.perform(
+			get("/user/test")
+			.queryParam("name", "Abdillah")
+		).andExpectAll(
+			status().isOk(),
+			content().string(Matchers.containsString("Abdillah"))
+		);
+	}
+
+	@Test
+	public void testConvertDateFromReqParam() throws Exception {
+		this.mockMvc.perform(
+			get("/user/date")
+			.queryParam("date", "3-4-2003")
+		).andExpectAll(
+			status().isOk(),
+			content().string(Matchers.containsString("Date : 2003 04 03"))
+		);
+	}
 }
