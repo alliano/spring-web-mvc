@@ -433,3 +433,23 @@ public class UserController {
     }
 }
 ```
+
+``` java
+@AutoConfigureMockMvc
+@SpringBootTest 
+class SpringWebMvcApplicationTests {
+
+	private @Autowired MockMvc mockMvc;
+
+	@Test
+	public void testConvertDateFromReqParam() throws Exception {
+		this.mockMvc.perform(
+			get("/user/date")
+			.queryParam("date", "3-4-2003")
+		).andExpectAll(
+			status().isOk(),
+			content().string(Matchers.containsString("Date : 2003 04 03"))
+		);
+	}
+}
+```
