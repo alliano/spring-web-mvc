@@ -358,3 +358,78 @@ class SpringWebMvcApplicationTests {
 	}
 }
 ```
+
+# Request Param
+Ketika kita menggunakan Servlet, jika kita membutuhkan request parameter kita selalu mengambill request parameter tersebut dari HttpServletRequest dengan method getParameter(nama_parameter).  
+Untuk di Spring Web Mvc kita bisa menggunakan annnotation [@RequestParam](https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/web/bind/annotation/RequestParam.html) untuk mendapatkan request parameter.  
+  
+Keuntungan menggunakan @RequestParam, kita bisa menentukan apakah parameter wajib dikirimkan atau tidak dan juga kita bisa membuat default value dari parameter tidak dikirimkan.  
+
+``` java
+@Controller @RequestMapping(path = "/user")
+public class UserController {
+    
+    @GetMapping(path = "/test")
+    // value = "name", wajib diisi, karena disinilah kita akan mengabil parameter dengan nama name
+    // required = false, ini artinya parameter name tidak wajib dikirimkan
+    public void test(@RequestParam(value = "name", required = false) String name, HttpServletResponse response) throws IOException {
+        response.getWriter().println(name);
+    }
+}
+```
+
+``` java
+@AutoConfigureMockMvc
+@SpringBootTest 
+class SpringWebMvcApplicationTests {
+
+	private @Autowired MockMvc mockMvc;
+
+	@Test
+	public void testRequestParam() throws Exception {
+		this.mockMvc.perform(
+			get("/user/test")
+			.queryParam("name", "Abdillah")
+		).andExpectAll(
+			status().isOk(),
+			content().string(Matchers.containsString("Abdillah"))
+		);
+	}
+}
+```
+
+## Converter\<S, T>
+Salhsatu fitur yang sangat menarik yang dimiliki @RequestParam adalah Converter.  
+@RequestParam dapat melakukan konversi secara otomatis, dan jika kita inigin menambahkan custom converter maka kita hanya butuh mengimplementasikan interface [Converter\<S, T>](https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/core/convert/converter/Converter.html)
+
+``` java
+@Component @Slf4j
+public class DateConverter implements Converter<String, Date> {
+
+    private final SimpleDateFormat simpleDateFormat = new SimpleDateFormat("dd-mm-yyyy");
+
+    @Override
+    public Date convert(String source) {
+        try {
+            return this.simpleDateFormat.parse(source);
+        } catch (Exception e) {
+            log.info("Failled convert Strig to date "+e.getMessage());
+            return null;
+        }
+    }
+}
+```
+
+Setelah kita mengimplementasikanya, maka kita bisa secara langsung menggunakanya
+``` java
+@Controller @RequestMapping(path = "/user")
+public class UserController {
+    
+    private final SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy mm dd");
+
+    @GetMapping(path = "/date")
+    public void dateConverter(@RequestParam(value = "date", required = false) Date date, HttpServletResponse response) throws IOException {
+        response.getWriter().println("Date : "+ simpleDateFormat.format(date));
+    }
+}
+```
