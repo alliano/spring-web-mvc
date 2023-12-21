@@ -284,3 +284,77 @@ public class GrettinngControllerMockingTest {
     } 
 }
 ```
+
+# Request Method
+Saat kita membuat Routing dengan menggunakan @RequestMapping, terdapat attribut method milik @RequestMapping untuk menentukan Http method yang diperbolehkan untuk mengakses endpoin tersebut.  
+  
+Jikalau kita tidak definisikan Http Method nya maka endpoin tersebut dapat di akses dengan semua Http Method.  
+
+Unutuk best practice nya, tiap endpoin kita harus definisikan Http Metod apa yang diizinkan untuk mengakses endpoi tersebut.  
+  
+Dan ketika Http Methd tersbut tidak diizinkan maka Spring akan menolak request tersebut dengan status code 405 Method Not Allowed
+``` java
+@Controller @AllArgsConstructor
+public class GreetingController {
+ 
+    private final GreetingService greetingService;
+
+    // endpoin ini haya bisa di akses dengan HTTP Method GET
+    @RequestMapping(path = "/greet", method = RequestMethod.GET)
+    public void greeting(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        response.getWriter().println(this.greetingService.greet(request.getParameter("name")));
+    }
+}
+```
+
+Daripada kita menggunakan annotation @RequestMapping Sebenarnya terdapat annotation shortcut untuk melakukan penentuan Http Method yang diperbolehkan pada endpoin, berikut ini adalah shortcut nya :
+| RequestMapping Method | Shortcut Annotation
+|-----------------------|----------------------
+| GET                   | @GetMapping
+| POST                  | @PostMapping
+| DELETE                | @DeleteMapping
+| PUT                   | @PutMapping
+| PATCH                 | @PatchMapping
+  
+Kita juga bisa melakukan kombinasi @RequestMapping dengan semua shortcut Http Method
+``` java
+@Controller @RequestMapping(path = "/user")
+public class UserController {
+
+    @GetMapping(path = "/hello")
+    public void helloUser(HttpServletResponse response) throws IOException {
+        response.getWriter().println("Hello User...");
+    }
+
+    @PostMapping(path = "/save")
+    public void save(HttpServletResponse response) throws IOException{
+        response.getWriter().println("SAVING.......");
+    }
+}
+```
+``` java
+
+@AutoConfigureMockMvc
+@SpringBootTest 
+class SpringWebMvcApplicationTests {
+
+	private @Autowired MockMvc mockMvc;
+
+	@Test
+	public void testUserController() throws Exception {
+		this.mockMvc.perform(
+			get("/user/hello")
+		).andExpectAll(
+			status().isOk(),
+			content().string(Matchers.containsString("Hello User..."))
+		);
+
+		this.mockMvc.perform(
+			post("/user/save")
+		).andExpectAll(
+			status().isOk(),
+			content().string(Matchers.containsString("SAVING......."))
+		);
+	}
+}
+```
