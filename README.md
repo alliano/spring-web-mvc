@@ -199,3 +199,88 @@ public class TestGreetingControllerIntgrationtest {
     }
 }
 ```
+
+# Service Layer
+Pada bahasa pemograman atau framework lain, biasanya kode yang menangani bisnis logic akan dijadikan 1 dengan Controller.  
+Berbeda dengan Java Programmer, Java Programmer kebanyakan memisahkan Controller dan Bisnis logic nya.  
+Controller akan berfokus pada Routing dan Bisnislogic biasanya akan di handle pada Service layer.  
+  
+Sebenarnya hal tersebut adalah best practice di bahasa pemograman JAVA.  
+Untuk membuat service layer pada spring framework, kita bisa menggunakan annotation @Service pada class.  
+Dengan begitu class yang di annotasi sebagai [@Service](https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/stereotype/Service.html) akan dijadikan Spring bean oleh Sprng container.
+
+``` java
+public interface GreetingService {
+    
+    public String greet(String name);
+}
+```
+
+``` java
+@Service // annotation khusus untuk service layer
+public class GreetingServiceImpl implements GreetingService {
+
+    @Override
+    public String greet(String name) {
+       if(name == null) return "Assalamuallikum Brouther...";
+       else
+       return "Assalamuallikum ya ".concat(name);
+    } 
+}
+```
+
+``` java
+@SpringBootTest 
+class SpringWebMvcApplicationTests {
+
+	private @Autowired GreetingService gretingService;
+
+	@Test
+	public void testGreetingService() {
+		String name = "Abdillah";
+		String greet1 = this.gretingService.greet(null);
+		String greet2 = this.gretingService.greet(name);
+		Assertions.assertArrayEquals(new String[]{"Assalamuallikum Brouther...", "Assalamuallikum ya ".concat(name)}, new String[]{greet1, greet2});
+	}
+}
+```
+# Mockito
+Spring framework juga menyediakan secara default Mockito, untuk melakukan mocking menggunakan mockito di Spring Web MVC sangatlah mudah, kita hanya perlu menggunakan annotatsi [@MockBean](https://docs.spring.io/spring-boot/docs/current/api/org/springframework/boot/test/mock/mockito/MockBean.html) kepada object yang ingin kita mocking, maka secara otomatis Spring container akan meregistrasikan Object tersebut sebagai Spring Bean sehingga ketika object tersebut di butuhkan maka object yang diberikan adalah object mock nya(Object tiruan).  
+
+***NOTE*** : *unutk pembahasan Mockito telah kita bahas disini https://github.com/alliano/Junit-jupiter?tab=readme-ov-file#pengenalan-mocking*
+
+
+``` java
+@AutoConfigureMockMvc
+@SpringBootTest(classes = SpringWebMvcApplication.class)
+public class GrettinngControllerMockingTest {
+    
+    @MockBean
+    private GreetingService greetingService;
+
+    private @Autowired MockMvc mockMvc;
+
+    @BeforeEach
+    public void setUp() {
+        /**
+         * Memberikan beavior atau prilaku ketika method greet() milik greetingService dipanggil
+         * 
+         * pada kasus ini ketika greet() dengan parameter string apapun maka akan mengembalikan 
+         * String Hello Gues
+         * */
+        Mockito.when(this.greetingService.greet(Mockito.anyString())).thenReturn("Hello Guest");
+
+    }
+
+    @Test
+    public void testGreting() throws Exception {
+        this.mockMvc.perform(
+            get("/greet")
+            .queryParam("name", "Alliano")
+        ).andExpectAll(
+            status().isOk(),
+            content().string(Matchers.containsString("Hello Guest"))
+        );
+    } 
+}
+```
