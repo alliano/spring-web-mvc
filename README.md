@@ -497,7 +497,7 @@ public class FormControler {
 class SpringWebMvcApplicationTests {
 
 	private @Autowired MockMvc mockMvc;
-    
+
 	@Test
 	public void testRequestContentType() throws Exception {
 		this.mockMvc.perform(
@@ -507,6 +507,117 @@ class SpringWebMvcApplicationTests {
 		).andExpectAll(
 			status().isOk(),
 			content().string(Matchers.containsString("some data"))
+		);
+	}
+}
+```
+
+# Response Content Type
+Kita telah mengetahui bahwa dengan annotation `@RequestMapping` atau shortcut request method kita bisa membatasi ContentType yang boleh di terima oelh controller, selain itu juga annotation `@RequestMapping` atau shortcut request method bisa digunakan untuk membatasi ContentType yang diperbolehkan untuk dikembalikan. Caranya cukup mudah kita hanya menambahkan attribut `produces`.
+
+``` java
+@Controller
+public class FormControler {
+
+    @GetMapping(path = "/html/hello", produces = MediaType.TEXT_HTML_VALUE) @ResponseBody
+    public String helloHtml(@RequestParam(value = "name") String name) {
+        return """
+                <html>
+                    <body>
+                        <h1>Hello My name is $name</h1>
+                    </body>
+                </html>
+                """.replace("$name", name);
+    }
+}
+```
+
+``` java
+@AutoConfigureMockMvc
+class SpringWebMvcApplicationTests {
+
+	private @Autowired MockMvc mockMvc;
+
+    public void testContentProduceType() throws Exception{
+		this.mockMvc.perform(
+			get("/html/hello")
+			.contentType(MediaType.TEXT_HTML)
+			.queryParam("name", "Abdillah")
+		).andExpectAll(
+			status().isOk(),
+			content().string(Matchers.containsString("Hello My name is Abdillah"))
+		);
+	}
+}
+```
+
+# @RequestHeader
+Ketika kita mengguakan Servlet, untuk mengambil header kita menggunakan `HttpServletRequest` dengan menthod `getHeder(headerName)`, namun pada Spring Web Mvc kita dapat melakukanya dengan lebih mudah dan simpel.  
+
+kita hanya perlu memberikan annotation `@RequestHeder` pada Controller Method, dan keuntungan menggunakan [@RequestHeader](https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/web/bind/annotation/RequestHeader.html) kita bisa menentukan bahwa header tersebut wajib dikirimkan atau tidak dan juga kita bisa menentukan default value untuk header tersebut, selain itu juga annotation `@RequestHeader` mendung `Converter<S, T>`
+ 
+``` java
+@Controller
+public class FormControler {
+ 
+    @PostMapping(path = "/auth") @ResponseBody
+    public String requestHeader(@RequestHeader(value = "TOKEN-API", required = true) String token) {
+        return token;
+    }
+}
+```
+
+``` java
+@AutoConfigureMockMvc
+class SpringWebMvcApplicationTests {
+
+	private @Autowired MockMvc mockMvc;
+
+	@Test
+	public void testRequestHeader() throws Exception {
+		String token = UUID.randomUUID().toString();
+		this.mockMvc.perform(
+			post("/auth")
+			.header("TOKEN-API", token)
+		).andExpectAll(
+			status().isOk(),
+			content().string(Matchers.containsString(token))
+		);
+	}
+}
+```
+
+# @PathVariable
+Path variable adalah fitur milik Spring Web Mvc yang digunakan untuk megambil value dari URL pateren.  
+Dengan adanya `@PathVaiable` kita bisa membuat url yang dinamis dan juga bisa digunakan untuk mengambil value yang dinamis dari URL.  
+
+Penggunaan annotation `@PathVariable` sangatlah mudah, kita hanya perlu meletakan annotation tersebut pada parameter method controller.  
+`@PathVariable` juga mendukung `Converter<S, T>`
+
+``` java
+@Controller @RequestMapping(path = "/user")
+public class UserController {
+
+    @GetMapping(path = "/{userId}/addresses/{addressId}") @ResponseBody
+    public String address(@PathVariable(value = "userId") String userId, @PathVariable(value = "addressId") String addressId){
+        return "userID : ".concat(userId+"\n").concat("addressId : ").concat(addressId);
+    }
+}
+```
+
+``` java
+@AutoConfigureMockMvc
+class SpringWebMvcApplicationTests {
+
+	private @Autowired MockMvc mockMvc;
+
+	@Test
+	public void testPathVariable() throws Exception {
+		this.mockMvc.perform(
+			get("/user/".concat("alliano/addresses/").concat("addressId"))
+		).andExpectAll(
+			status().isOk(),
+			content().string(Matchers.containsString("userID : alliano\naddressId : addressId"))
 		);
 	}
 }
