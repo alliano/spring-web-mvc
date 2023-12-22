@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+
 import jakarta.servlet.http.HttpServletResponse;
 
 @Controller @RequestMapping(path = "/user")
@@ -31,8 +33,8 @@ public class UserController {
         response.getWriter().println(name);
     }
 
-    @GetMapping(path = "/date")
-    public void dateConverter(@RequestParam(value = "date", required = false) Date date, HttpServletResponse response) throws IOException {
-        response.getWriter().println("Date : "+ simpleDateFormat.format(date));
+    @GetMapping(path = "/date") @ResponseBody
+    public String dateConverter(@RequestParam(value = "date", required = false) Date date, HttpServletResponse response) throws IOException {
+        return "Date : "+ simpleDateFormat.format(date);
     }
 }
