@@ -453,3 +453,61 @@ class SpringWebMvcApplicationTests {
 	}
 }
 ```
+
+# @ResponseBody
+Saat kita ingin mengembalikan Response kita selalu menggunakan `HttpServletResponse` dengan menggunakan metod `getWriter().println()`, sebenarnya saat kita menggunakan Spring Web Mvc ada cara yang lebih praktis, yaitu dengan menggunakan annotation [@ResponseBody](https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/web/bind/annotation/ResponseBody.html) dengan ketentukan method nya harus mereturnkan data nya.  
+
+``` java
+@Controller @RequestMapping(path = "/user")
+public class UserController {
+    
+    private final SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy mm dd");
+
+    @GetMapping(path = "/date") @ResponseBody
+    public String dateConverter(@RequestParam(value = "date", required = false) Date date, HttpServletResponse response) throws IOException {
+        return "Date : "+ simpleDateFormat.format(date);
+    }
+}
+```
+
+# Request Content Type
+Kita bisa membatas controller yang kita buat hanya menerima content dengan tipe yang sudah ditentukan, misalnya :
+* APPLICATION FORM URLENCODED VALUE
+* APPLICATION JSON VALUE
+* dan sebagainya
+
+Request content Type nya tidak diizinkan maka spring akan secara otomatis menolak requs tersebut. Misalnya controller hello hanya meneriam data string namun request memberikan data selain string maka secara otomatis request tersebut akan ditolak.  
+  
+Kita bisa membatasi Content Type dengan menamahkan @RequestMapping atau shotcut Request mapping dengan attribut `consume`.  
+``` java
+@Controller
+public class FormControler {
+    
+    @ResponseBody
+    @GetMapping(path = "/form", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
+    public String form(@RequestParam(value = "data") String data){
+        return data;
+    }
+}
+```
+
+``` java
+@AutoConfigureMockMvc // melakukan konfigurasi otomatis MockMvc
+@SpringBootTest 
+class SpringWebMvcApplicationTests {
+
+	private @Autowired MockMvc mockMvc;
+    
+	@Test
+	public void testRequestContentType() throws Exception {
+		this.mockMvc.perform(
+			get("/form")
+			.queryParam("data", "some data")
+			.contentType(MediaType.APPLICATION_FORM_URLENCODED)
+		).andExpectAll(
+			status().isOk(),
+			content().string(Matchers.containsString("some data"))
+		);
+	}
+}
+```
