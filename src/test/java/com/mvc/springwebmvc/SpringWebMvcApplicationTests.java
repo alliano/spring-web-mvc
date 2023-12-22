@@ -11,6 +11,9 @@ import com.mvc.springwebmvc.services.GreetingService;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+import java.util.UUID;
+
 import org.hamcrest.Matchers;
 
 @AutoConfigureMockMvc // melakukan konfigurasi otomatis MockMvc
@@ -99,6 +102,40 @@ class SpringWebMvcApplicationTests {
 		).andExpectAll(
 			status().isOk(),
 			content().string(Matchers.containsString("some data"))
+		);
+	}
+
+	@Test
+	public void testContentProduceType() throws Exception{
+		this.mockMvc.perform(
+			get("/html/hello")
+			.contentType(MediaType.TEXT_HTML)
+			.queryParam("name", "Abdillah")
+		).andExpectAll(
+			status().isOk(),
+			content().string(Matchers.containsString("Hello My name is Abdillah"))
+		);
+	}
+
+	@Test
+	public void testRequestHeader() throws Exception {
+		String token = UUID.randomUUID().toString();
+		this.mockMvc.perform(
+			post("/auth")
+			.header("TOKEN-API", token)
+		).andExpectAll(
+			status().isOk(),
+			content().string(Matchers.containsString(token))
+		);
+	}
+
+	@Test
+	public void testPathVariable() throws Exception {
+		this.mockMvc.perform(
+			get("/user/".concat("alliano/addresses/").concat("addressId"))
+		).andExpectAll(
+			status().isOk(),
+			content().string(Matchers.containsString("userID : alliano\naddressId : addressId"))
 		);
 	}
 }

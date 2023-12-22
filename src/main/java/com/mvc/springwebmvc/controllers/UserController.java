@@ -6,6 +6,7 @@ import java.util.Date;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -36,5 +37,10 @@ public class UserController {
     @GetMapping(path = "/date") @ResponseBody
     public String dateConverter(@RequestParam(value = "date", required = false) Date date, HttpServletResponse response) throws IOException {
         return "Date : "+ simpleDateFormat.format(date);
+    }
+
+    @GetMapping(path = "/{userId}/addresses/{addressId}") @ResponseBody
+    public String address(@PathVariable(value = "userId") String userId, @PathVariable(value = "addressId") String addressId){
+        return "userID : ".concat(userId+"\n").concat("addressId : ").concat(addressId);
     }
 }
