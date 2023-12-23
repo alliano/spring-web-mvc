@@ -6,14 +6,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 import com.mvc.springwebmvc.services.GreetingService;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import java.io.IOException;
 import java.util.UUID;
-
 import org.hamcrest.Matchers;
 
 @AutoConfigureMockMvc // melakukan konfigurasi otomatis MockMvc
@@ -136,6 +137,19 @@ class SpringWebMvcApplicationTests {
 		).andExpectAll(
 			status().isOk(),
 			content().string(Matchers.containsString("userID : alliano\naddressId : addressId"))
+		);
+	}
+
+	@Test
+	public void testFileMangerController() throws IOException, Exception {
+		this.mockMvc.perform(
+			multipart("/file/upload")
+			.file(new MockMultipartFile("file", "profile.png", "image/png", getClass().getResourceAsStream("/images/DispatcherServlet-Controller.jpg")))
+			.contentType(MediaType.MULTIPART_FORM_DATA)
+			.queryParam("name", "Abdillah")
+		).andExpectAll(
+			status().isOk(),
+			content().string(Matchers.containsString("Success upload file"))
 		);
 	}
 }
