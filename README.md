@@ -622,3 +622,54 @@ class SpringWebMvcApplicationTests {
 	}
 }
 ```
+
+# Upload File
+Untuk melakukan Upload file di Spring Web Mvc bisa menggunakan `HttpServletRequest` dengan method `getPart()` seperti di java [Servlet](https://github.com/alliano/Java-Servlet?tab=readme-ov-file#upload-file).  
+Namun di Srping Web Mvc terdapat cara yang lebih mudah dan simpel, yaitu dengan menggunakan annotation `@RequestPart` dengan `MultipartFile` pada argument method controller.  
+``` java
+@Controller @RequestMapping(path = "/file")
+public class FileManagerController {
+    
+    @PostMapping(path = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE) @ResponseBody
+    public String uploadFile(@RequestPart(value = "file") MultipartFile file, @RequestParam(value = "name") String name) throws IllegalStateException, IOException {
+        Path part = Path.of("upload/"+file.getOriginalFilename());
+        file.transferTo(part);
+        return "Success upload file";
+    }
+}
+```
+
+``` java
+@AutoConfigureMockMvc
+@SpringBootTest 
+class SpringWebMvcApplicationTests {
+
+	private @Autowired MockMvc mockMvc;
+
+	@Test
+	public void testFileMangerController() throws IOException, Exception {
+		this.mockMvc.perform(
+			multipart("/file/upload")
+			.file(new MockMultipartFile("file", "profile.png", "image/png", getClass().getResourceAsStream("/images/DispatcherServlet-Controller.jpg")))
+			.contentType(MediaType.MULTIPART_FORM_DATA)
+			.queryParam("name", "Abdillah")
+		).andExpectAll(
+			status().isOk(),
+			content().string(Matchers.containsString("Success upload file"))
+		);
+	}
+}
+```
+
+Spring Web Mvc memiliki properties untuk mengatur kriteria file yang boleh di upload, misalnya file dengan ukuran tertentu, file dengan ektensi tertentu dan sebagainya.  
+Semua pengaturan tersebut kita busa tambahkan di `application.properties` dengan prefix `spring.servlet.multipart`
+
+contoh :
+``` properties
+<!-- artinya upload file dizinkan -->
+spring.servlet.multipart.enabled= true
+<!-- artinya maksimal ukuran file yang boleh di upload 1MB -->
+spring.servlet.multipart.max-file-size= 1MB
+```
+
+**NOTE :** *Unutk lebih detailny bisa kunjungin disini : https://docs.spring.io/spring-boot/docs/current/reference/html/application-properties.html#application-properties.web.spring.servlet.multipart.enabled*
