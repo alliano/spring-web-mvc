@@ -24,7 +24,7 @@ public class TestGreetingControllerIntgrationtest {
         ResponseEntity<String> response = this.testRestTemplate.getForEntity(url, String.class);
         Assertions.assertEquals(HttpStatus.OK, response.getStatusCode());
         Assertions.assertNotNull(response.getBody());
-        Assertions.assertEquals("Assalmuallikum Brouther..", response.getBody().trim());
+        Assertions.assertEquals("Assalamuallaikum Brouther...", response.getBody().trim());
     }
 
     @Test
