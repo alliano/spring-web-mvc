@@ -6,8 +6,8 @@ public class GreetingServiceImpl implements GreetingService {
 
     @Override
     public String greet(String name) {
-       if(name == null) return "Assalamuallikum Brouther...";
+       if(name == null) return "Assalamuallaikum Brouther...";
        else
-       return "Assalamuallikum ya ".concat(name);
+       return "Assalamuallaikum ya ".concat(name);
     } 
 }

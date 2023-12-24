@@ -31,7 +31,7 @@ class SpringWebMvcApplicationTests {
 			get("/greet")
 		).andExpectAll(
 			status().isOk(),
-			content().string(Matchers.containsString("Assalmuallikum Brouther"))
+			content().string(Matchers.containsString("Assalamuallaikum Brouther"))
 		);
 	}
 
@@ -52,7 +52,7 @@ class SpringWebMvcApplicationTests {
 		String name = "Abdillah";
 		String greet1 = this.gretingService.greet(null);
 		String greet2 = this.gretingService.greet(name);
-		Assertions.assertArrayEquals(new String[]{"Assalamuallikum Brouther...", "Assalamuallikum ya ".concat(name)}, new String[]{greet1, greet2});
+		Assertions.assertArrayEquals(new String[]{"Assalamuallaikum Brouther...", "Assalamuallaikum ya ".concat(name)}, new String[]{greet1, greet2});
 	}
 
 	@Test
