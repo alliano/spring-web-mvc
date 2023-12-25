@@ -773,3 +773,53 @@ class SpringWebMvcApplicationTests {
 }
 ```
 
+# ResponseEntity\<T>
+Kita sebemunya telah menyinggung tentang [`ResponseEntity<T>`](https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/http/ResponseEntity.html) untuk membuat response status yang dinamis.  
+
+Nah...Untuk melakukan hal tersebut menggunakan `ResponseEntity\<T>` sangatlah mudah, kita hanya perlu melakukan return dengan type `ResponseEntity\<T>` pada method controller nya.  
+Kita bisa menentukan Response Statusnya pada saat melakukan return dengan menggunakan method `status()` milik `ResponseEntity\<T>`
+``` java
+@Controller @RequestMapping(path = "/auth")
+public class AuthenticationController {
+    
+    @PostMapping(path = "/login")
+    public ResponseEntity<String> login(@RequestParam(value = "email") String email, @RequestParam(value = "password") String password) {
+        if (email.equals("abdillah@gmail.com") && password.equals("scret"))
+            return ResponseEntity.status(HttpStatus.OK).body("Success Authenticated!");
+        else
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized!");
+    }
+}
+```
+
+``` java
+@SpringBootTest(classes = SpringWebMvcApplication.class) @AutoConfigureMockMvc
+public class ApplicationTest {
+    
+    private @Autowired MockMvc mockMvc;
+
+    @Test
+    public void testLoginSuccess() throws Exception {
+        this.mockMvc.perform(
+            post("/auth/login")
+            .queryParam("email", "abdillah@gmail.com")
+            .queryParam("password", "scret")
+        ).andExpectAll(
+            status().isOk(),
+            content().string(Matchers.containsString("Success Authenticated!"))
+        );
+    }
+
+    @Test
+    public void testLoginFaill() throws Exception {
+        this.mockMvc.perform(
+            post("/auth/login")
+            .queryParam("email", "wrong@gmail.com")
+            .queryParam("password", "unkown")
+        ).andExpectAll(
+            status().isUnauthorized(),
+            content().string(Matchers.containsString("Unauthorized!"))
+        );
+    }
+}
+```
