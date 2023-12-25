@@ -891,8 +891,8 @@ public ResponseEntity<?> formInput(@RequestParam(name = "firstName") String fris
 ```
 
 
-Nah....Daripada menggunakan annotation `@RequestParam` lebihbaik kita menggunakan annotation [`@ModelAttribute`](https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/web/bind/annotation/ModelAttribute.html)  
-Cara menggunakan annotation `@ModelAttribut` ini sangatlah mudah, kita hanya perlu membuatkan object yang merepresentasikan input form dan kita gunakan object tersebut pada parameter method lalu kita berikan annotation `@ModelAttribute`.  
+Nah....Daripada menggunakan annotation `@RequestParam` lebih baik kita menggunakan annotation [`@ModelAttribute`](https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/web/bind/annotation/ModelAttribute.html)  
+Cara menggunakan annotation `@ModelAttribut` ini sangatlah mudah, kita hanya perlu membuatkan object yang merepresentasikan input form dan kita gunakan object tersebut pada parameter method controller lalu kita berikan annotation `@ModelAttribute`, maka secara otomatis spring akan melakukan mapping pada object tesebut sesuai dengan input form.
   
 Berikut ini class yang merepresentasikan Input form
 ``` java
