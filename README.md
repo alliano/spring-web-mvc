@@ -823,3 +823,60 @@ public class ApplicationTest {
     }
 }
 ```
+
+# Cookie
+Di Spring web mvc saat kita ingin menambahkan cookie kita bisa menggunakan `HttpServletResponse` dengan method `addCookie()` dan jikalau kita ingin mengambil cookie tersebut kita juga bisa menggunakan `HttpServletRequest`, namun ada cara yang lebih praktis dan mudah, yaitu dengan menggunakan annotation [`@CookieValue()`](https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/web/bind/annotation/CookieValue.html) pada parameter method controller.
+
+``` java
+@Controller @RequestMapping(path = "/auth")
+public class AuthenticationController {
+    
+    @PostMapping(path = "/addCookie")
+    public ResponseEntity<?> setCookie(@RequestParam(value = "username") String username, @RequestParam(value = "password") String password, HttpServletResponse response) {
+        if (username.equals("test") && password.equals("pass")) {
+            Cookie cookie = new Cookie("username", username);
+            cookie.setPath("/");
+            response.addCookie(cookie);
+            return ResponseEntity.status(HttpStatus.OK).body("Success Authenticated!");
+        }
+        else {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized!");
+        }
+    }
+
+    @GetMapping(path = "/user")
+    public ResponseEntity<?> getCookie(@CookieValue(name = "username") String username) {
+        return ResponseEntity.status(HttpStatus.OK).body(username);
+    }
+}
+```
+
+``` java
+@SpringBootTest(classes = SpringWebMvcApplication.class) @AutoConfigureMockMvc
+public class ApplicationTest {
+    
+    private @Autowired MockMvc mockMvc;
+    
+    @Test
+    public void testCookie() throws Exception {
+        this.mockMvc.perform(
+            post("/auth/addCookie")
+            .queryParam("username", "test")
+            .queryParam("password", "pass")
+        ).andExpectAll(
+            status().isOk(),
+            content().string(Matchers.containsString("Success Authenticated!")),
+            cookie().value("username", "test")
+
+        );
+
+        this.mockMvc.perform(
+            get("/auth/user")
+            .cookie(new Cookie("username", "test"))
+        ).andExpectAll(
+            status().isOk(),
+            content().string(Matchers.containsString("test"))
+        );
+    }   
+}
+```
