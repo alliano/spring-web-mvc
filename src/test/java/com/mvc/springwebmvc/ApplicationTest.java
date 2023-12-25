@@ -6,11 +6,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mvc.springwebmvc.models.RegisterRequest;
 
 import jakarta.servlet.http.Cookie;
 
@@ -18,6 +23,8 @@ import jakarta.servlet.http.Cookie;
 public class ApplicationTest {
     
     private @Autowired MockMvc mockMvc;
+
+    private @Autowired ObjectMapper objectMapper;
 
     @Test
     public void testLoginSuccess() throws Exception {
@@ -64,5 +71,41 @@ public class ApplicationTest {
             content().string(Matchers.containsString("test"))
         );
     }
-    
+
+    @Test
+    public void formRequestTest() throws Exception {
+        final String firstName = "Alli";
+        final String lastName = "Abdillah";
+        final String email = "alli@gmail.com";
+        final String password = "secret";
+        final String age = "20";
+        final String brithDate = "4-3-2003";
+        this.mockMvc.perform(
+            post("/auth/register")
+            .param("firstName", firstName)
+            .param("lastName", lastName)
+            .param("email", email)
+            .param("password", password)
+            .param("age", age)
+            .param("brithDate", brithDate)
+            .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+        ).andExpectAll(
+            status().isCreated()
+        ).andDo(result -> {
+            RegisterRequest req = this.objectMapper.readValue(result.getResponse().getContentAsString(), RegisterRequest.class);
+            Assertions.assertNotNull(req);
+            Assertions.assertNotNull(req.getAge());
+            Assertions.assertNotNull(req.getFirstName());
+            Assertions.assertNotNull(req.getLastName());
+            Assertions.assertNotNull(req.getEmail());
+            Assertions.assertNotNull(req.getPassword());
+            Assertions.assertNotNull(req.getBrithDate());
+            Assertions.assertEquals(firstName, req.getFirstName());
+            Assertions.assertEquals(lastName, req.getLastName());
+            Assertions.assertEquals(email, req.getEmail());
+            Assertions.assertEquals(password, req.getPassword());
+            Assertions.assertEquals(brithDate, req.getBrithDate());
+            Assertions.assertEquals(age, req.getAge());
+        });
+    }
 }
