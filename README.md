@@ -825,7 +825,7 @@ public class ApplicationTest {
 ```
 
 # Cookie
-Di Spring web mvc saat kita ingin menambahkan cookie kita bisa menggunakan `HttpServletResponse` dengan method `addCookie()` dan jikalau kita ingin mengambil cookie tersebut kita juga bisa menggunakan `HttpServletRequest`, namun ada cara yang lebih praktis dan mudah, yaitu dengan menggunakan annotation [`@CookieValue()`](https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/web/bind/annotation/CookieValue.html) pada parameter method controller.
+Di Spring web mvc saat kita ingin menambahkan cookie kita bisa menggunakan `HttpServleteResponse` dengan method `addCookie()` dan jikalau kita ingin mengambil cookie tersebut kita juga bisa menggunakan `HttpServletRequest`, namun ada cara yang lebih praktis dan mudah, yaitu dengan menggunakan annotation [`@CookieValue()`](https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/web/bind/annotation/CookieValue.html) pada parameter method controller.
 
 ``` java
 @Controller @RequestMapping(path = "/auth")
@@ -856,7 +856,7 @@ public class AuthenticationController {
 public class ApplicationTest {
     
     private @Autowired MockMvc mockMvc;
-    
+
     @Test
     public void testCookie() throws Exception {
         this.mockMvc.perform(
