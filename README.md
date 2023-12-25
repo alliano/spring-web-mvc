@@ -673,3 +673,103 @@ spring.servlet.multipart.max-file-size= 1MB
 ```
 
 **NOTE :** *Unutk lebih detailny bisa kunjungin disini : https://docs.spring.io/spring-boot/docs/current/reference/html/application-properties.html#application-properties.web.spring.servlet.multipart.enabled*
+
+# Request Response Body
+Saat kita ingin membuat RestFull API dengan Sring Web Mvc tentunya kita akan selalu berurusan dengan Request dan Response Body, karena di Response Body ini lah API melakukan Komunikasi.
+
+Untuk mengambil Request Body di Spring Web Mvc dari HttpRequest, kita bisa menggunakan annotation `@RequestBody` pada parameter contrller.  
+
+``` java
+@AllArgsConstructor
+@Controller @RequestMapping(path = "/user")
+public class UserController {
+    
+    private final SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy mm dd");
+    
+    private final ObjectMapper objectMapper;
+
+    @PostMapping(path = "/reqJson", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE) @ResponseBody
+    public String reqJson(@RequestBody String userRequest) throws JsonMappingException, JsonProcessingException {
+        UserRequest userReq = this.objectMapper.readValue(userRequest, UserRequest.class);
+        return this.objectMapper.writeValueAsString(UserResponse.builder()
+            .name(userReq.getName())
+            .email(userReq.getEmail())
+            .date(this.simpleDateFormat.format(new Date(System.currentTimeMillis())))
+            .build());
+    }
+}
+```
+
+``` java
+@AutoConfigureMockMvc
+@SpringBootTest 
+class SpringWebMvcApplicationTests {
+
+	private @Autowired MockMvc mockMvc;
+
+	private @Autowired ObjectMapper objectMapper;
+
+	@Test
+	public void testReqResJson() throws Exception {
+		UserRequest request = UserRequest.builder()
+			.name("Abdillah")
+			.email("unkown@gmail.com")
+			.build();
+		
+		this.mockMvc.perform(
+			post("/user/reqJson")
+			.contentType(MediaType.APPLICATION_JSON)
+			.accept(MediaType.APPLICATION_JSON)
+			.content(this.objectMapper.writeValueAsString(request))
+		).andExpectAll(
+			status().isOk(),
+			header().string(HttpHeaders.CONTENT_TYPE, Matchers.containsString(MediaType.APPLICATION_JSON_VALUE))
+		).andDo(result -> {
+			UserResponse response = this.objectMapper.readValue(result.getResponse().getContentAsString(), UserResponse.class);
+			Assertions.assertNotNull(response);
+			Assertions.assertEquals("Abdillah", response.getName());
+			Assertions.assertEquals("unkown@gmail.com", response.getEmail());
+			Assertions.assertNotNull(response.getDate());
+		});
+	}
+}
+```
+
+# @ResponseStatus
+Saat kita membuat controller, ketika controller tersebut di panggil maka contoller akan memberikan response.  Response dari controller tersebut memiliki `HTTP STATUS` yang berfungsi sebagai indikasi terjadi galat pada system atau tidak.  
+  
+By Default Response Status dari controller adalah `200` yang artinya tidak ada masalah atau `OK`, Jika kita ingin Response status nya itu dinamis maka kita bisa menggunakan [`ResponseEntity<T>`](https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/http/ResponseEntity.html) atau [`HttpServletResponse`](https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/http/server/ServletServerHttpResponse.html).  
+
+Atau jikalau controller kita udah fix tidak akan meberikan Response Status tertentu maka kita bisa menggunakan [`@ResponseStatus`](https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/web/bind/annotation/ResponseStatus.html)
+
+``` java
+@AllArgsConstructor
+@Controller @RequestMapping(path = "/user")
+public class UserController {
+    
+    @DeleteMapping(path = "/{id}") @ResponseStatus(code = HttpStatus.ACCEPTED) @ResponseBody
+    public String delete(@PathVariable(value = "id") String id) {
+        return "Success Deleted!";
+    }
+}
+```
+
+``` java
+@AutoConfigureMockMvc
+@SpringBootTest 
+class SpringWebMvcApplicationTests {
+
+	private @Autowired MockMvc mockMvc;
+
+	@Test
+	public void testResponseStatus() throws Exception {
+		this.mockMvc.perform(
+			delete("/user/238hs12y7")
+		).andExpectAll(
+			status().isAccepted(),
+			content().string(Matchers.containsString("Success Deleted!"))
+		);
+	}
+}
+```
+
