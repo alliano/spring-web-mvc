@@ -4,21 +4,36 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.ResponseStatus;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mvc.springwebmvc.models.UserRequest;
+import com.mvc.springwebmvc.models.UserResponse;
 
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.AllArgsConstructor;
 
+@AllArgsConstructor
 @Controller @RequestMapping(path = "/user")
 public class UserController {
     
     private final SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy mm dd");
     
+    private final ObjectMapper objectMapper;
+
     @GetMapping(path = "/hello")
     public void helloUser(HttpServletResponse response) throws IOException {
         response.getWriter().println("Hello User...");
@@ -42,5 +57,20 @@ public class UserController {
     @GetMapping(path = "/{userId}/addresses/{addressId}") @ResponseBody
     public String address(@PathVariable(value = "userId") String userId, @PathVariable(value = "addressId") String addressId){
         return "userID : ".concat(userId+"\n").concat("addressId : ").concat(addressId);
+    }
+
+    @PostMapping(path = "/reqJson", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE) @ResponseBody
+    public String reqJson(@RequestBody String userRequest) throws JsonMappingException, JsonProcessingException {
+        UserRequest userReq = this.objectMapper.readValue(userRequest, UserRequest.class);
+        return this.objectMapper.writeValueAsString(UserResponse.builder()
+            .name(userReq.getName())
+            .email(userReq.getEmail())
+            .date(this.simpleDateFormat.format(new Date(System.currentTimeMillis())))
+            .build());
+    }
+
+    @DeleteMapping(path = "/{id}") @ResponseStatus(code = HttpStatus.ACCEPTED) @ResponseBody
+    public String delete(@PathVariable(value = "id") String id) {
+        return "Success Deleted!";
     }
 }

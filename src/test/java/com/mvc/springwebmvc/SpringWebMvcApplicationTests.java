@@ -5,9 +5,14 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mvc.springwebmvc.models.UserRequest;
+import com.mvc.springwebmvc.models.UserResponse;
 import com.mvc.springwebmvc.services.GreetingService;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -24,6 +29,8 @@ class SpringWebMvcApplicationTests {
 	private @Autowired MockMvc mockMvc;
 
 	private @Autowired GreetingService gretingService;
+
+	private @Autowired ObjectMapper objectMapper;
 
 	@Test
 	public void greetingNoParam() throws Exception {
@@ -150,6 +157,40 @@ class SpringWebMvcApplicationTests {
 		).andExpectAll(
 			status().isOk(),
 			content().string(Matchers.containsString("Success upload file"))
+		);
+	}
+
+	@Test
+	public void testReqResJson() throws Exception {
+		UserRequest request = UserRequest.builder()
+			.name("Abdillah")
+			.email("unkown@gmail.com")
+			.build();
+		
+		this.mockMvc.perform(
+			post("/user/reqJson")
+			.contentType(MediaType.APPLICATION_JSON)
+			.accept(MediaType.APPLICATION_JSON)
+			.content(this.objectMapper.writeValueAsString(request))
+		).andExpectAll(
+			status().isOk(),
+			header().string(HttpHeaders.CONTENT_TYPE, Matchers.containsString(MediaType.APPLICATION_JSON_VALUE))
+		).andDo(result -> {
+			UserResponse response = this.objectMapper.readValue(result.getResponse().getContentAsString(), UserResponse.class);
+			Assertions.assertNotNull(response);
+			Assertions.assertEquals("Abdillah", response.getName());
+			Assertions.assertEquals("unkown@gmail.com", response.getEmail());
+			Assertions.assertNotNull(response.getDate());
+		});
+	}
+
+	@Test
+	public void testResponseStatus() throws Exception {
+		this.mockMvc.perform(
+			delete("/user/238hs12y7")
+		).andExpectAll(
+			status().isAccepted(),
+			content().string(Matchers.containsString("Success Deleted!"))
 		);
 	}
 }
