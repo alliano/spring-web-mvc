@@ -880,3 +880,98 @@ public class ApplicationTest {
     }   
 }
 ```
+
+# @ModelAttribute
+Saat kita bekerja dengan input form pada HTML, sering kali kita akan membutuhkan multiple form pada halaman html dan untuk menghandle multiple form tersebut pada controller, biasanya kita akan menggunakan annotation `@RequestParam` namun hal tersebut sangatlah buruk karena form kita memiliki banyak input dan tentunya jikalau kita menggunakan annotation `@RequestParam` maka method controller kita akan memiliki banyak parameter(sejumlah dengan input form).  
+``` java
+@PostMapping(path = "/user/input", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE) @ResponseBody
+public ResponseEntity<?> formInput(@RequestParam(name = "firstName") String fristName, @RequestParam(name = "lastName") String lastName, @RequestParam(name = "email") String email, @RequestParam(name = "password") String password, @RequestParam(name = "age") String age) {
+    // logic here
+}
+```
+
+
+Nah....Daripada menggunakan annotation `@RequestParam` lebihbaik kita menggunakan annotation [`@ModelAttribute`](https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/web/bind/annotation/ModelAttribute.html)  
+Cara menggunakan annotation `@ModelAttribut` ini sangatlah mudah, kita hanya perlu membuatkan object yang merepresentasikan input form dan kita gunakan object tersebut pada parameter method lalu kita berikan annotation `@ModelAttribute`.  
+  
+Berikut ini class yang merepresentasikan Input form
+``` java
+@Builder
+@Setter @Getter @AllArgsConstructor @NoArgsConstructor
+public class RegisterRequest {
+    
+    private String firstName;
+
+    private String lastName;
+
+    private String email;
+
+    private String password;
+
+    private String age;
+
+    private String brithDate;
+}
+```
+
+Controller
+
+``` java
+@Controller @RequestMapping(path = "/auth") @AllArgsConstructor
+public class AuthenticationController {
+    
+    private final ObjectMapper objectMapper;
+
+    @PostMapping(path = "/register", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE) @ResponseBody
+    public ResponseEntity<String> register(@ModelAttribute RegisterRequest registerRequest) throws JsonProcessingException {
+        return ResponseEntity.status(HttpStatus.CREATED).body(this.objectMapper.writeValueAsString(registerRequest));
+    }
+}
+```
+
+``` java
+@SpringBootTest(classes = SpringWebMvcApplication.class) @AutoConfigureMockMvc
+public class ApplicationTest {
+    
+    private @Autowired MockMvc mockMvc;
+
+    private @Autowired ObjectMapper objectMapper;
+
+    @Test
+    public void formRequestTest() throws Exception {
+        final String firstName = "Alli";
+        final String lastName = "Abdillah";
+        final String email = "alli@gmail.com";
+        final String password = "secret";
+        final String age = "20";
+        final String brithDate = "4-3-2003";
+        this.mockMvc.perform(
+            post("/auth/register")
+            .param("firstName", firstName)
+            .param("lastName", lastName)
+            .param("email", email)
+            .param("password", password)
+            .param("age", age)
+            .param("brithDate", brithDate)
+            .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+        ).andExpectAll(
+            status().isCreated()
+        ).andDo(result -> {
+            RegisterRequest req = this.objectMapper.readValue(result.getResponse().getContentAsString(), RegisterRequest.class);
+            Assertions.assertNotNull(req);
+            Assertions.assertNotNull(req.getAge());
+            Assertions.assertNotNull(req.getFirstName());
+            Assertions.assertNotNull(req.getLastName());
+            Assertions.assertNotNull(req.getEmail());
+            Assertions.assertNotNull(req.getPassword());
+            Assertions.assertNotNull(req.getBrithDate());
+            Assertions.assertEquals(firstName, req.getFirstName());
+            Assertions.assertEquals(lastName, req.getLastName());
+            Assertions.assertEquals(email, req.getEmail());
+            Assertions.assertEquals(password, req.getPassword());
+            Assertions.assertEquals(brithDate, req.getBrithDate());
+            Assertions.assertEquals(age, req.getAge());
+        });
+    }
+}
+```
