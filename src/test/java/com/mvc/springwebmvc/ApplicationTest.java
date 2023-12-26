@@ -14,8 +14,11 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mvc.springwebmvc.models.RegisterRequest;
+import com.mvc.springwebmvc.models.UserRequest;
+import com.mvc.springwebmvc.models.UserResponse;
 
 import jakarta.servlet.http.Cookie;
 
@@ -108,4 +111,53 @@ public class ApplicationTest {
             Assertions.assertEquals(age, req.getAge());
         });
     }
+
+    @Test
+    public void testJson() throws Exception {
+        UserRequest userRequest = UserRequest.builder()
+                    .name("Abdillah")
+                    .email("abdillah@gmail.com")
+                    .build();
+        String json = this.objectMapper.writeValueAsString(userRequest);
+        this.mockMvc.perform(
+            post("/user/get")
+            .contentType(MediaType.APPLICATION_JSON)
+            .accept(MediaType.APPLICATION_JSON)
+            .content(json)
+        ).andExpectAll(
+            status().isOk()
+        ).andDo(result -> {
+            UserResponse response = this.objectMapper.readValue(result.getResponse().getContentAsString(), UserResponse.class);
+            Assertions.assertNotNull(response);
+            Assertions.assertEquals("Abdillah", response.getName());
+            Assertions.assertEquals("abdillah@gmail.com", response.getEmail());
+            Assertions.assertEquals("12-12-2023", response.getDate());
+        });
+    }
+
+    @Test
+    public void testBeanvalidationFail() throws JsonProcessingException, Exception {
+        this.mockMvc.perform(
+            post("/user/get")
+            .contentType(MediaType.APPLICATION_JSON)
+            .accept(MediaType.APPLICATION_JSON)
+            .content(this.objectMapper.writeValueAsString(new UserRequest()))
+        ).andExpectAll(
+            status().isBadRequest()
+        );
+    }
+
+    @Test
+    public void testControllerAdvice() throws JsonProcessingException, Exception {
+        this.mockMvc.perform(
+            post("/user/get")
+            .contentType(MediaType.APPLICATION_JSON)
+            .accept(MediaType.APPLICATION_JSON)
+            .content(this.objectMapper.writeValueAsString(new UserRequest()))
+        ).andExpectAll(
+            status().isBadRequest(),
+            content().string(Matchers.containsString("Violation Exception :"))
+        );
+    }
 }
+ 
