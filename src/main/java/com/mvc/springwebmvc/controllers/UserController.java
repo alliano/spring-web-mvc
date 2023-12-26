@@ -6,6 +6,7 @@ import java.util.Date;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,6 +25,7 @@ import com.mvc.springwebmvc.models.UserRequest;
 import com.mvc.springwebmvc.models.UserResponse;
 
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 
 @AllArgsConstructor
@@ -72,5 +74,12 @@ public class UserController {
     @DeleteMapping(path = "/{id}") @ResponseStatus(code = HttpStatus.ACCEPTED) @ResponseBody
     public String delete(@PathVariable(value = "id") String id) {
         return "Success Deleted!";
+    }
+
+    @PostMapping(path = "/get", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<UserResponse> getUser(@RequestBody @Valid UserRequest request) throws JsonMappingException, JsonProcessingException {
+        UserResponse response = this.objectMapper.readValue(this.objectMapper.writeValueAsString(request), UserResponse.class);
+        response.setDate("12-12-2023");
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 }
