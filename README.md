@@ -884,7 +884,7 @@ public class ApplicationTest {
 # @ModelAttribute
 Saat kita bekerja dengan input form pada HTML, sering kali kita akan membutuhkan multiple form pada halaman html dan untuk menghandle multiple form tersebut pada controller, biasanya kita akan menggunakan annotation `@RequestParam` namun hal tersebut sangatlah buruk karena form kita memiliki banyak input dan tentunya jikalau kita menggunakan annotation `@RequestParam` maka method controller kita akan memiliki banyak parameter(sejumlah dengan input form).  
 ``` java
-@PostMapping(path = "/user/input", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE) @ResponseBody
+@PostMapping(path = "/user/input", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
 public ResponseEntity<?> formInput(@RequestParam(name = "firstName") String fristName, @RequestParam(name = "lastName") String lastName, @RequestParam(name = "email") String email, @RequestParam(name = "password") String password, @RequestParam(name = "age") String age) {
     // logic here
 }
@@ -975,3 +975,158 @@ public class ApplicationTest {
     }
 }
 ```
+
+# JSON Serialized and Deseralized
+Spring Web Mvc sudah terintregasi dengan Jakson liberary dengan stabil untuk menghandle tipe data JSON. 
+Jadi saat kita mendapatkan Request dan akan melakukan response pada method controller, kita tidak perlu melakukan konversi manual baik dari Request ataupun Response, semua itu sudah di handle oleh Jakson liberary, yang harus kita lakukan hanyalah memberi tahu annotation request method bahwa method tersebut akan meneriama dan mengembalikan JSON.  
+
+``` java
+@AllArgsConstructor
+@Controller @RequestMapping(path = "/user")
+public class UserController {
+    
+    private final ObjectMapper objectMapper;
+
+    @PostMapping(path = "/get", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<UserResponse> getUser(@RequestBody UserRequest request) throws JsonMappingException, JsonProcessingException {
+        UserResponse response = this.objectMapper.readValue(this.objectMapper.writeValueAsString(request), UserResponse.class);
+        response.setDate("12-12-2023");
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+}
+```
+
+``` java
+@SpringBootTest(classes = SpringWebMvcApplication.class) @AutoConfigureMockMvc
+public class ApplicationTest {
+    
+    private @Autowired MockMvc mockMvc;
+
+    private @Autowired ObjectMapper objectMapper;
+
+    @Test
+    public void testJson() throws Exception {
+        UserRequest userRequest = UserRequest.builder()
+                    .name("Abdillah")
+                    .email("abdillah@gmail.com")
+                    .build();
+        String json = this.objectMapper.writeValueAsString(userRequest);
+        this.mockMvc.perform(
+            post("/user/get")
+            .contentType(MediaType.APPLICATION_JSON)
+            .accept(MediaType.APPLICATION_JSON)
+            .content(json)
+        ).andExpectAll(
+            status().isOk()
+        ).andDo(result -> {
+            UserResponse response = this.objectMapper.readValue(result.getResponse().getContentAsString(), UserResponse.class);
+            Assertions.assertNotNull(response);
+            Assertions.assertEquals("Abdillah", response.getName());
+            Assertions.assertEquals("abdillah@gmail.com", response.getEmail());
+            Assertions.assertEquals("12-12-2023", response.getDate());
+        });
+    }
+}
+```
+
+**NOTE :** *Dan juga kita bisa melakukan konfigurasi Jakson liberary di `application.properties`, untuk prefix konfigurasi jakson lib nya adalah `spring.jakson.`, untuk lebih detailnya bisa kunjungi disini : https://docs.spring.io/spring-boot/docs/current/reference/html/application-properties.html#application-properties.json.spring.jackson.datatype.enum*
+
+# Bean Validation
+Salah satu fitur yang sanagat menarik di bahasa pemograman java adalah bean validation, dengan bean validation kita tidak perlu melakukan validasi secara manual lagi dan tentunya kode kita menjadi clean dan modular.  
+
+Berita baiknya Spring framework telah terintregasi stabil dengan bean validation, jadi kita bisa menggunakan fitur-fitur yang dimiliki bean validation di spring framework.  
+
+``` java
+@Builder
+@Setter @Getter @AllArgsConstructor @NoArgsConstructor
+public class UserRequest {
+    
+    @NotBlank // annotation milik bean validation
+    private String name;
+
+    @NotBlank @Email // annotation milik bean validation
+    private String email;
+}
+```
+
+``` java
+    @PostMapping(path = "/get", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<UserResponse> getUser(@RequestBody @Valid UserRequest request) throws JsonMappingException, JsonProcessingException {
+        UserResponse response = this.objectMapper.readValue(this.objectMapper.writeValueAsString(request), UserResponse.class);
+        response.setDate("12-12-2023");
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+```
+
+``` java
+@SpringBootTest(classes = SpringWebMvcApplication.class) @AutoConfigureMockMvc
+public class ApplicationTest {
+    
+    private @Autowired MockMvc mockMvc;
+
+    private @Autowired ObjectMapper objectMapper;
+
+    @Test
+    public void testBeanvalidationFail() throws JsonProcessingException, Exception {
+        this.mockMvc.perform(
+            post("/user/get")
+            .contentType(MediaType.APPLICATION_JSON)
+            .accept(MediaType.APPLICATION_JSON)
+            .content(this.objectMapper.writeValueAsString(new UserRequest()))
+        ).andExpectAll(
+            status().isBadRequest()
+        );
+    }
+}
+```
+> untuk detail dari bean validation bisa kunjungi link ini https://github.com/alliano/java-bean-validation
+> dan untuk intregasi dengan spring framework bisa kunjungi link ini https://github.com/alliano/spring-validation
+
+# Global Exception Handler
+Spring memiliki annotation yang sangat menarik, yaitu [`@ControllerAdvice`](https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/web/bind/annotation/ControllerAdvice.html) yang digunakan untuk menghadle global exception, jadi jikalau terjadi exception di layer controller atau layer service atau layer repository, dansebagainya kita bisa handle dengan annotation `@ControllerAdvice`.  
+Cara menggunakan `@ControllerAdvice` ini cukup sederhana kita cukup membuat class lalu kita beri annotation `@ControllerAdvice`.  
+``` java
+@ControllerAdvice
+public class ErrorController { }
+```
+Dan untuk menentukan Exception jenis apa yang akan di tangkap oleh `@ControllerAdvice` kita bisa menggunakan annotation [`@ExceptionHandler`](https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/web/bind/annotation/ExceptionHandler.html) dan jikalau kita ingin memodifikasi Exception nya kita bisa masukan exception tersebut sebagai parameter method.  
+``` java
+@ControllerAdvice
+public class ErrorController {
+    
+    @ExceptionHandler(value = MethodArgumentNotValidException.class)
+    public ResponseEntity<?> argumentNotValidException(MethodArgumentNotValidException methodArgumentNotValidException){
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Violation Exception : "+methodArgumentNotValidException.getMessage());
+    }
+
+    @ExceptionHandler(value = ConstraintViolationException.class)
+    public ResponseEntity<?> constraintVionationException(ConstraintViolationException constraintViolationException) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Violation Exception : "+constraintViolationException.getMessage());
+    }
+}
+```
+
+``` java
+@SpringBootTest(classes = SpringWebMvcApplication.class) @AutoConfigureMockMvc
+public class ApplicationTest {
+    
+    private @Autowired MockMvc mockMvc;
+
+    private @Autowired ObjectMapper objectMapper;
+
+    @Test
+    public void testControllerAdvice() throws JsonProcessingException, Exception {
+        this.mockMvc.perform(
+            post("/user/get")
+            .contentType(MediaType.APPLICATION_JSON)
+            .accept(MediaType.APPLICATION_JSON)
+            .content(this.objectMapper.writeValueAsString(new UserRequest()))
+        ).andExpectAll(
+            status().isBadRequest(),
+            content().string(Matchers.containsString("Violation Exception :"))
+        );
+    }
+}
+```
+
+
