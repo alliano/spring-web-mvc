@@ -54,6 +54,8 @@ public class AuthenticationController {
     public ResponseEntity<String> register(@ModelAttribute RegisterRequest registerRequest) throws JsonProcessingException {
         return ResponseEntity.status(HttpStatus.CREATED).body(this.objectMapper.writeValueAsString(registerRequest));
     }
+
+
 }
 
 

@@ -5,6 +5,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.util.List;
+
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -15,12 +18,14 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mvc.springwebmvc.models.RegisterRequest;
 import com.mvc.springwebmvc.models.UserRequest;
 import com.mvc.springwebmvc.models.UserResponse;
 
 import jakarta.servlet.http.Cookie;
+
 
 @SpringBootTest(classes = SpringWebMvcApplication.class) @AutoConfigureMockMvc
 public class ApplicationTest {
@@ -158,6 +163,23 @@ public class ApplicationTest {
             status().isBadRequest(),
             content().string(Matchers.containsString("Violation Exception :"))
         );
+    }
+
+    @Test
+    public void testBindingResult() throws JsonProcessingException, Exception{
+        this.mockMvc.perform(
+            post("/user/bindingResult")
+            .contentType(MediaType.APPLICATION_JSON)
+            .accept(MediaType.APPLICATION_JSON)
+            .content(this.objectMapper.writeValueAsString(new UserRequest()))
+        ).andExpectAll(
+            status().isBadRequest()
+        ).andDo(result -> {
+            List<String> response = this.objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<List<String>>(){});
+            Assertions.assertNotNull(response);
+            Assertions.assertEquals(2, response.size());
+            response.forEach(err -> System.out.println(err));
+        });
     }
 }
  

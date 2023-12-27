@@ -3,11 +3,14 @@ package com.mvc.springwebmvc.controllers;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -81,5 +84,13 @@ public class UserController {
         UserResponse response = this.objectMapper.readValue(this.objectMapper.writeValueAsString(request), UserResponse.class);
         response.setDate("12-12-2023");
         return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
+    @PostMapping(path = "/bindingResult")
+    public ResponseEntity<?> bindingResult(@RequestBody @Valid UserRequest userRequest, BindingResult bindingResult){
+       List<String> errors = bindingResult.getFieldErrors().stream().map(err -> {
+               return err.getField().concat(" : ").concat(err.getDefaultMessage());
+              }).collect(Collectors.toList());
+         return ResponseEntity.badRequest().body(errors);
     }
 }
