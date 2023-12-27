@@ -22,9 +22,8 @@ public class ErrorPageCustomController implements ErrorController {
         Integer statusCode = (Integer)request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE);
         String errorMessage = (String)request.getAttribute(RequestDispatcher.ERROR_MESSAGE);
         File file = ResourceUtils.getFile("classpath:pages/errorPage.html");
-        String html = new String(Files.readAllBytes(Path.of(file.getPath())));
-        html.replace("$StatusCode", statusCode.toString());
-        html.replace("$Message", errorMessage);
+        String raw = new String(Files.readAllBytes(Path.of(file.getPath())));
+        String html = raw.replace("$StatusCode", statusCode.toString()).replace("$Message", errorMessage);
         return ResponseEntity.status(statusCode).body(html);
     }
 }
