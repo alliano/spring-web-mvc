@@ -1129,4 +1129,50 @@ public class ApplicationTest {
 }
 ```
 
+# BindingResult
+Saat terjadi validation error pada method controller, maka Bean Validation akan meng throw [`MethodArgumentNotValidException`](https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/web/bind/MethodArgumentNotValidException.html) dan request akan dihentikan.  
+  
+Di kasus tertentu kadang kita ingin menghandle error tersebut secara manual, misalnya jikalau terjadi validation error maka akan menampilkan halaman tertentu dan sebagainya. Hal tersebut dapat kita lakukan dengan memanfaatkan [`BindingResult`](https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/validation/BindingResult.html) sebagai parameter method controller, Dengan begitu maka Spring akan melakukan injection kepada `BindingResult` dan object error kan dimasukan ke `BindingResult`. Setelah itu kita bisa gunakan object `BindingResult` untuk melakukan error handling secara manual.  
+``` java
+@AllArgsConstructor
+@Controller @RequestMapping(path = "/user")
+public class UserController {
+    
+    private final ObjectMapper objectMapper;
 
+    @PostMapping(path = "/bindingResult")
+    public ResponseEntity<?> bindingResult(@RequestBody @Valid UserRequest userRequest, BindingResult bindingResult){
+       List<String> errors = bindingResult.getFieldErrors().stream().map(err -> {
+               return err.getField().concat(" : ").concat(err.getDefaultMessage());
+              }).collect(Collectors.toList());
+         return ResponseEntity.badRequest().body(errors);
+    }
+}
+```
+
+``` java
+@SpringBootTest(classes = SpringWebMvcApplication.class) @AutoConfigureMockMvc
+public class ApplicationTest {
+    
+    private @Autowired MockMvc mockMvc;
+
+    private @Autowired ObjectMapper objectMapper;
+
+    @Test
+    public void testBindingResult() throws JsonProcessingException, Exception{
+        this.mockMvc.perform(
+            post("/user/bindingResult")
+            .contentType(MediaType.APPLICATION_JSON)
+            .accept(MediaType.APPLICATION_JSON)
+            .content(this.objectMapper.writeValueAsString(new UserRequest()))
+        ).andExpectAll(
+            status().isBadRequest()
+        ).andDo(result -> {
+            List<String> response = this.objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<List<String>>(){});
+            Assertions.assertNotNull(response);
+            Assertions.assertEquals(2, response.size());
+            response.forEach(err -> System.out.println(err));
+        });
+    }
+}
+```
