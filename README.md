@@ -1245,3 +1245,82 @@ public class ApplicationTest {
     }
 }
 ```
+# Web Mvc Configuration
+Saat kita bekerja menggunakan Spring Web Mvc, seringkali kita akan membutuhkan konfigurasi pada applikasi kita, misalnya konfigurasi middleware, dan sebagainya. 
+Untuk melakukan konfigurasi di Spring Web Mvc, kita bisa melakukanya dengan mengimplementasikan interface [`WebMvcCongigurer`](https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/web/servlet/config/annotation/WebMvcConfigurer.html)  
+
+``` java
+@Configuration @AllArgsConstructor
+public class WebConfiguration implements WebMvcConfigurer { }
+```
+`WebMvcConfigurer` memiliki banyak method yang bisa kita gunakan untuk melakukan konfigurasi.
+
+# Interceptor
+Saat kita ingin melakukan filter di Java servlet kita bisa menggunakan annotation [`@WebFilter`](https://docs.oracle.com/javaee%2F7%2Fapi%2F%2F/javax/servlet/annotation/WebFilter.html) dan melakukan extend [`HttpFilter`](https://tomcat.apache.org/tomcat-9.0-doc/servletapi/javax/servlet/http/HttpFilter.html).  
+Namun saat kita bekerja dengan Sring Web Mvc ada cara yang lebih baik untuk melakukan Filter, yaitu menggunakan `Interceptor`. Interceptor ini mirip seperti Filter ataupun Middleware. Cara poenggunaanya pun cukup mudah, kita hanya perlu mengimplementasikan `HandlerInterceptor` dan meregistrasikan impelentasi tersebut di `WebMvcConfigurer` menggunakan method `addInterceptors(InterceptorRegistry)`.
+
+``` java
+@Component
+public class HeaderInterceptor implements HandlerInterceptor {
+    
+    @Override
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+        String token = request.getHeader("X-API-TOKEN");
+        if(Objects.isNull(token) && checToken(token)) {
+            response.sendRedirect("/login");
+            return false;
+        }
+        return HandlerInterceptor.super.preHandle(request, response, handler);
+    }
+
+    private boolean checToken(String token) {
+        if(!token.startsWith("AUTH-")) return false;
+        else
+        return true;
+    }
+}
+```
+``` java
+@Configuration @AllArgsConstructor
+public class WebConfiguration implements WebMvcConfigurer {
+    
+    private final HeaderInterceptor headerInterceptor;
+
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(headerInterceptor)
+            // addPathPatterens() digunakan untuk memberitahu interceptor ini nanti akan digunakan di url mana
+            .addPathPatterns("/home/*");
+    }
+}
+```
+
+``` java
+@SpringBootTest(classes = SpringWebMvcApplication.class) @AutoConfigureMockMvc
+public class ApplicationTes2 {
+
+    private @Autowired MockMvc mockMvc;
+
+    @Test
+    public void interceptorTestFaillv() throws Exception{
+        this.mockMvc.perform(
+            get("/home/current")
+        ).andExpectAll(
+            status().is3xxRedirection()
+        );
+    }
+
+
+    @Test
+    public void testInterceptorSuccess() throws Exception{
+        this.mockMvc.perform(
+            get("/home/current")
+            .header("username", "Abdillah")
+            .header("X-API-TOKEN", "AUTH-d39hd732dh27ydr723t")
+        ).andExpectAll(
+            status().isOk(),
+            content().string(Matchers.containsString("Abdillah"))
+        );
+    }
+}
+```
