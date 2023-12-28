@@ -1290,11 +1290,11 @@ public class WebConfiguration implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(headerInterceptor)
             // addPathPatterens() digunakan untuk memberitahu interceptor ini nanti akan digunakan di url mana
-            .addPathPatterns("/home/*");
+            .addPathPatterns("/home/**");
     }
 }
 ```
-
+**NOTE :** *Untuk detail dari pateren patch matcher bisa kunjungi disini : https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/util/AntPathMatcher.html*
 ``` java
 @SpringBootTest(classes = SpringWebMvcApplication.class) @AutoConfigureMockMvc
 public class ApplicationTes2 {
@@ -1320,6 +1320,105 @@ public class ApplicationTes2 {
         ).andExpectAll(
             status().isOk(),
             content().string(Matchers.containsString("Abdillah"))
+        );
+    }
+}
+```
+
+# Method Argument Resolver
+Sebelumnya kita pernam menggunakan annotation `@ModalAttribute`, `@RequestParam` dan sebagainya di parameter method controller.  
+Pernah gak sih kalian berfikir :  
+  
+
+**YOU :** "Bijir kira-kira cara mapping object yang dianotasi `@ModalAttribute` gimanayak🤔🤔".  
+
+**YOU :** "Hemm...:v gimana yak caranya parameter metohod controller bisa dapetin value hanya dengan diberi annotasi `@RequestParam`🤔🤔"  
+  
+Okay, disini saya akan menjawab : Jadi semua hal tersebut dilakukan oleh `HandlerMethodArgumentResolver`. `HandlerMethodArgumentResolver` ini memiliki 2 method utama untuk melakukan hal tersebut `supportsParameter()` dan `resolveParameter()`.  
+`supportsParameter()` digunakan untuk menentukan tipe parameter apa yang akan di resolve dan `supportsParameter()` digunakan untuk logic bagaimana meresolve argument tersebut.  
+  
+Kita juga bisa membuat `ArgumentResolver` untuk parameter method controller yang kita inginkan. Caranya dengan mengimplementasikan `HandlerMethodArgumentResolver` dan meregistrasikanya di `WebMvcConfigurer` dengan method `addArgumentResolvers()`
+
+``` java
+@Builder
+@Setter @Getter @AllArgsConstructor @NoArgsConstructor
+public class AuthenticationRequest {
+    
+    private String username;
+
+    private String role;
+}
+```
+
+``` java
+@Component
+public class AuthenticationMethodArgumentResolver implements HandlerMethodArgumentResolver {
+
+    @Override
+    public boolean supportsParameter(MethodParameter parameter) {
+        return parameter.getParameterType().equals(AuthenticationRequest.class);
+    }
+
+    @Override
+    public Object resolveArgument(MethodParameter parameter, ModelAndViewContainer mavContainer, NativeWebRequest webRequest, WebDataBinderFactory binderFactory) throws Exception {
+        HttpServletRequest servletRequest = ((HttpServletRequest)webRequest.getNativeRequest());
+        String token = servletRequest.getHeader("AUTH-TOKEN");
+        if(!Objects.isNull(token)) {
+            return AuthenticationRequest.builder()
+                .username("Abdillah")
+                .role("Admin")
+                .build();
+        }
+        else {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED");
+        }
+    }
+}
+```
+
+``` java
+@Configuration @AllArgsConstructor
+public class WebConfiguration implements WebMvcConfigurer {
+
+    private final AuthenticationMethodArgumentResolver authenticationMethodArgumentResolver;
+
+    @Override
+    public void addArgumentResolvers(List<HandlerMethodArgumentResolver> resolvers) {
+        WebMvcConfigurer.super.addArgumentResolvers(resolvers);
+        resolvers.add(authenticationMethodArgumentResolver);
+    }
+}
+```
+
+``` java
+@SpringBootTest(classes = SpringWebMvcApplication.class) @AutoConfigureMockMvc
+public class ApplicationTes2 {
+
+    private @Autowired MockMvc mockMvc;
+
+    private @Autowired ObjectMapper objectMapper;
+
+    @Test
+    public void testMethodArgumentResolver() throws Exception{
+        this.mockMvc.perform(
+            get("/auth/resource")
+            .header("AUTH-TOKEN", "AUTH-ceihfr8y230r082ud023ud802u38")
+            .accept(MediaType.APPLICATION_JSON)
+        ).andExpectAll(
+            status().isOk()
+        ).andDo(result -> {
+            AuthenticationRequest response = this.objectMapper.readValue(result.getResponse().getContentAsString(), AuthenticationRequest.class);
+            Assertions.assertNotNull(response);
+            Assertions.assertEquals("Abdillah", response.getUsername());
+        });
+    }
+
+    @Test
+    public void testMethodArgumnentResolverFaill() throws Exception{
+        this.mockMvc.perform(
+            get("/auth/resource")
+        ).andExpectAll(
+            status().isUnauthorized()
         );
     }
 }
