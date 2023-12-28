@@ -1176,3 +1176,72 @@ public class ApplicationTest {
     }
 }
 ```
+
+# Session Attribute
+Untuk membuat Session di Sring Web Mvc sangatlah mudah, yaitu dengan menggunakan `HttpServletRequest`, untuk detal ini bisa lihat disini :  
+https://github.com/alliano/Java-Servlet?tab=readme-ov-file#httpsession-methods  
+
+Dan untuk mengabil session nya kita juga bisa menggunakan `HttpServletRequest`, namn ada cara yang lebih mudah yang disediakan oleh Spring Web Mvc, yaitu menggunakan annotation [`@SessionAttribute`](https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/web/bind/annotation/SessionAttribute.html)
+``` java
+@Controller @RequestMapping(path = "/auth") @AllArgsConstructor
+public class AuthenticationController {
+    
+    private final ObjectMapper objectMapper;
+
+    // Membuat Session
+    @GetMapping(path = "/session", produces = MediaType.APPLICATION_JSON_VALUE) @ResponseBody
+    public String createSession(HttpServletRequest request) {
+        User user = User.builder()
+                    .username("Abdillah")
+                    .role("user")
+                    .build();
+        HttpSession session = request.getSession(true);
+        session.setAttribute("user", user);
+        return "success create session...";
+    }
+
+    // Mengambil session menggunakan annotation @SessionAttribute
+    @GetMapping(path = "/session/current", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> getSession(@SessionAttribute(value = "user") User user) {
+        return ResponseEntity.ok().body(user);
+    }
+}
+```
+
+``` java
+@SpringBootTest(classes = SpringWebMvcApplication.class) @AutoConfigureMockMvc
+public class ApplicationTest {
+    
+    private @Autowired MockMvc mockMvc;
+
+    private @Autowired ObjectMapper objectMapper;
+  
+    @Test
+    public void testCreateSession() throws Exception{
+        this.mockMvc.perform(
+            get("/auth/session")
+        ).andExpectAll(
+            status().isOk(),
+            content().string(Matchers.containsString("success create session..."))
+        );
+    }
+
+    @Test
+    public void testGetSession() throws Exception{
+        this.mockMvc.perform(
+            get("/auth/session/current")
+            .sessionAttr("user", User.builder().username("Abdillah").role("user").build())
+            .accept(MediaType.APPLICATION_JSON)
+        ).andExpectAll(
+            status().isOk()
+        ).andDo(
+            result -> {
+                User response = this.objectMapper.readValue(result.getResponse().getContentAsString(), User.class);
+                Assertions.assertNotNull(response);
+                Assertions.assertEquals("Abdillah", response.getUsername());
+                Assertions.assertEquals("user", response.getRole());
+            }
+        );
+    }
+}
+```
