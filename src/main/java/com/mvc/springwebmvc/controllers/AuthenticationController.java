@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.SessionAttribute;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mvc.springwebmvc.models.AuthenticationRequest;
 import com.mvc.springwebmvc.models.RegisterRequest;
 import com.mvc.springwebmvc.models.User;
 
@@ -75,6 +76,11 @@ public class AuthenticationController {
     @GetMapping(path = "/session/current", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> getSession(@SessionAttribute(value = "user") User user) {
         return ResponseEntity.ok().body(user);
+    }
+
+    @GetMapping(path = "/resource", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> getResource(AuthenticationRequest authenticationRequest) {
+        return ResponseEntity.status(HttpStatus.OK).body(authenticationRequest);
     }
 }
 
