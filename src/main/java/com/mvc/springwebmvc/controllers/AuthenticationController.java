@@ -10,12 +10,18 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.SessionAttribute;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mvc.springwebmvc.models.RegisterRequest;
+import com.mvc.springwebmvc.models.User;
 
 import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import lombok.AllArgsConstructor;
 
 @Controller @RequestMapping(path = "/auth") @AllArgsConstructor
@@ -55,7 +61,21 @@ public class AuthenticationController {
         return ResponseEntity.status(HttpStatus.CREATED).body(this.objectMapper.writeValueAsString(registerRequest));
     }
 
+    @GetMapping(path = "/session", produces = MediaType.APPLICATION_JSON_VALUE) @ResponseBody
+    public String createSession(HttpServletRequest request) {
+        User user = User.builder()
+                    .username("Abdillah")
+                    .role("user")
+                    .build();
+        HttpSession session = request.getSession(true);
+        session.setAttribute("user", user);
+        return "success create session...";
+    }
 
+    @GetMapping(path = "/session/current", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> getSession(@SessionAttribute(value = "user") User user) {
+        return ResponseEntity.ok().body(user);
+    }
 }
 
 

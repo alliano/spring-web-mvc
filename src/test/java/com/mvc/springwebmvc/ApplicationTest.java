@@ -21,6 +21,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mvc.springwebmvc.models.RegisterRequest;
+import com.mvc.springwebmvc.models.User;
 import com.mvc.springwebmvc.models.UserRequest;
 import com.mvc.springwebmvc.models.UserResponse;
 
@@ -180,6 +181,34 @@ public class ApplicationTest {
             Assertions.assertEquals(2, response.size());
             response.forEach(err -> System.out.println(err));
         });
+    }
+    
+    @Test
+    public void testCreateSession() throws Exception{
+        this.mockMvc.perform(
+            get("/auth/session")
+        ).andExpectAll(
+            status().isOk(),
+            content().string(Matchers.containsString("success create session..."))
+        );
+    }
+
+    @Test
+    public void testGetSession() throws Exception{
+        this.mockMvc.perform(
+            get("/auth/session/current")
+            .sessionAttr("user", User.builder().username("Abdillah").role("user").build())
+            .accept(MediaType.APPLICATION_JSON)
+        ).andExpectAll(
+            status().isOk()
+        ).andDo(
+            result -> {
+                User response = this.objectMapper.readValue(result.getResponse().getContentAsString(), User.class);
+                Assertions.assertNotNull(response);
+                Assertions.assertEquals("Abdillah", response.getUsername());
+                Assertions.assertEquals("user", response.getRole());
+            }
+        );
     }
 }
  
