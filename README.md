@@ -1423,3 +1423,91 @@ public class ApplicationTes2 {
     }
 }
 ```
+
+# View
+Spring Web Mvc by default tidak memiliki tempalting engine untuk menghandle View, namun Spring Web Mvc telah terintregasi secara setabil dengan banyak template engine, diantaranya yaitu :
+* [JSP](https://docs.oracle.com/cd/E13222_01/wls/docs81/jsp/intro.html)
+* [Thymeleaf](https://www.thymeleaf.org/documentation.html)
+* [Mustache](https://github.com/spullara/mustache.java)
+* [FreeMarker](https://freemarker.apache.org/docs/dgui_quickstart.html)
+* dan masih banyak lagi
+
+Okay, disini kita akan mencoba membuat view dengan menggunakan Mustache.  
+Sebelum kita menggunakan mustache, kita tambahkan terlebih dahulu dependency nya.  
+``` xml
+<dependency>
+	<groupId>org.springframework.boot</groupId>
+	<artifactId>spring-boot-starter-mustache</artifactId>
+</dependency>
+```
+
+Setelah itu kita pelu mengatur extension yang akan dibaca oleh mustache compiler.
+``` properties
+# ini artinya file yang extension nya .html akan di baca oleh mustache
+spring.mustache.suffix=.html
+# ini artinnya semua file tempalte engine nya disimpan di resources/tempaltes/ 
+spring.mustache.prefix=classpath:/templates/
+``` 
+untuk detal konfigurasi mustache di spring, kita bisa lihat disini https://docs.spring.io/spring-boot/docs/current/reference/html/application-properties.html#application-properties.templating.spring.mustache.charset
+  
+
+# ModelAndView
+Untuk menampilkan view, kita bisa mereturnkan object [`ModelAndView`](https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/web/servlet/ModelAndView.html) pada controller nya.  
+Dalam object `ModalView` kita bisa memasukan data template yang akan ditampilkan di tempalte view.  
+  
+**Example usage :**  
+  
+Disini kita kan membuat 1 file template yang bernama `home.html` di `resources/templates` 
+``` html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{title}}</title>
+</head>
+<body>
+    <h1>Spring web Mvc</h1>
+    <p>{{content}}</p>
+</body>
+</html>
+```
+**NOTE:** 
+> sintax {{key}} digunakan untuk mengambil data yang dikirimkan oleh `ModelAndView`
+
+Setelah itu, mari kita membuat controller, dan di controler tersebut kita akan mengembalikan object `ModelAndView` besertda data yang ingin kita tampilkan di template.  
+
+``` java
+@Controller @RequestMapping(path = "/view")
+public class ViewController {
+    
+    @GetMapping(path = "/home/{name}")
+    public ModelAndView home(@PathVariable(value = "name") String name) {
+        // parameter constractor yang pertama adalah nama file template kita, dan parameter ke 2 adalah key dan value data yang dikirimkan ke template
+        return new ModelAndView("home", Map.of("title", "Belajar Mustache", "name", name, "content", "Hallo, ".concat(name).concat(" selamat belajar Srping web mvc dan mustache")));
+    }
+}
+```
+  
+Setelah itu ketika kita akses url `http://localhost:8081/view/home/abdillah` maka halaman yang tampil akan seperti ini  
+![mustache](./src/main/resources/images/mustache.png)  
+  
+Kita juga bisa menguji dengan Unit Test.  
+``` java
+@SpringBootTest(classes = SpringWebMvcApplication.class) @AutoConfigureMockMvc
+public class ApplicationTes2 {
+
+    private @Autowired MockMvc mockMvc;
+
+    @Test
+    public void testView() throws Exception{
+        this.mockMvc.perform(
+            get("/view/home/abdillah")
+        ).andExpectAll(
+            status().isOk(),
+            content().string(Matchers.containsString("abdillah")),
+            content().string(Matchers.containsString("selamat belajar Srping web mvc dan mustache"))
+        );
+    }
+}
+```
