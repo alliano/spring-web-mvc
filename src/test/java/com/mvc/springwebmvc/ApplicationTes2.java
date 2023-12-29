@@ -68,4 +68,15 @@ public class ApplicationTes2 {
             status().isUnauthorized()
         );
     }
+
+    @Test
+    public void testView() throws Exception{
+        this.mockMvc.perform(
+            get("/view/home/abdillah")
+        ).andExpectAll(
+            status().isOk(),
+            content().string(Matchers.containsString("abdillah")),
+            content().string(Matchers.containsString("selamat belajar Srping web mvc dan mustache"))
+        );
+    }
 }
