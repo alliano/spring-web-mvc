@@ -4,6 +4,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.List;
+
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -13,6 +15,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mvc.springwebmvc.models.AuthenticationRequest;
 
@@ -78,5 +81,29 @@ public class ApplicationTes2 {
             content().string(Matchers.containsString("abdillah")),
             content().string(Matchers.containsString("selamat belajar Srping web mvc dan mustache"))
         );
+    }
+
+    @Test
+    public void testRedirectModelAndView() throws Exception{
+        this.mockMvc.perform(
+            get("/view/hello")
+        ).andExpectAll(
+            status().is3xxRedirection()
+        );
+    }
+
+    @Test
+    public void testWishlistController() throws Exception{
+        this.mockMvc.perform(
+            get("/wishlist")
+            .queryParam("wishlist", "Haji tahun 2024")
+            .contentType(MediaType.APPLICATION_JSON)
+        ).andExpectAll(
+            status().isOk()
+        ).andDo(result -> {
+            List<String> response = this.objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<List<String>>(){});
+            Assertions.assertNotNull(response);
+            Assertions.assertEquals("Haji tahun 2024", response.get(0));
+        });
     }
 }
