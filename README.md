@@ -1482,14 +1482,14 @@ Setelah itu, mari kita membuat controller, dan di controler tersebut kita akan m
 public class ViewController {
     
     @GetMapping(path = "/home/{name}")
-    public ModelAndView home(@PathVariable(value = "name") String name) {
+    public ModelAndView home(@RequestParam (value = "name") String name) {
         // parameter constractor yang pertama adalah nama file template kita, dan parameter ke 2 adalah key dan value data yang dikirimkan ke template
         return new ModelAndView("home", Map.of("title", "Belajar Mustache", "name", name, "content", "Hallo, ".concat(name).concat(" selamat belajar Srping web mvc dan mustache")));
     }
 }
 ```
   
-Setelah itu ketika kita akses url `http://localhost:8081/view/home/abdillah` maka halaman yang tampil akan seperti ini  
+Setelah itu ketika kita akses url `http://localhost:8080/view/home?name=Abdillah` maka halaman yang tampil akan seperti ini  
 ![mustache](./src/main/resources/images/mustache.png)  
   
 Kita juga bisa menguji dengan Unit Test.  
@@ -1508,6 +1508,94 @@ public class ApplicationTes2 {
             content().string(Matchers.containsString("abdillah")),
             content().string(Matchers.containsString("selamat belajar Srping web mvc dan mustache"))
         );
+    }
+}
+```
+
+# Redirect
+Untuk melakukan redirect kita bisa menggunakan `HttpServletResponse` dengan method `sendRedirect(path)`, namun ketika kita menggunakan `ModelAndView` kita tidak perlu lagi menggunakan `HttpServletResponse`, kita bisa langsung mengembalikan object `ModelAndView` dengan parameter constactor `redirect:/path/to/page`
+
+``` java
+@Controller @RequestMapping(path = "/view")
+public class ViewController {
+    
+    @GetMapping(path = "/home")
+    public ModelAndView home(@RequestParam(value = "name", required = false) String name) {
+        // parameter constractor yang pertama adalah nama file template kita, dan parameter ke 2 adalah key dan value data yang dikirimkan ke template
+        return new ModelAndView("home", Map.of("title", "Belajar Mustache", "name", name, "content", "Hallo, ".concat(name).concat(" selamat belajar Srping web mvc dan mustache")));
+    }
+
+    @GetMapping(path = "/hello")
+    public ModelAndView test(@RequestParam(value = "name", required = false) String name) {
+        // contoh melakukan redirect dengan ModelAndView
+        if(Objects.isNull(name)) return new ModelAndView("redirect:/view/home?name=tamu");
+            else
+        return new ModelAndView("hello", Map.of("title", "hello page", "name", name));
+    }
+}
+```
+Maka, ketika kita akses `http://localhost:8080/view/hello` tampa query parameter maka akan di redirect ke halaman `/home`  
+
+``` java
+@SpringBootTest(classes = SpringWebMvcApplication.class) @AutoConfigureMockMvc
+public class ApplicationTes2 {
+
+    private @Autowired MockMvc mockMvc;
+
+    @Test
+    public void testRedirectModelAndView() throws Exception{
+        this.mockMvc.perform(
+            get("/view/hello")
+        ).andExpectAll(
+            status().is3xxRedirection()
+        );
+    }
+}
+```
+
+# @RestController
+Sebelumnya ketika kita ingin membuat controller kita selalu menggunakan annotation `@Controller`, namun ketika kita ingin membuat RestfullApi, daripada menggunakan `@Controller` lebih baik kita menggunakan `@RestController` dengan begitu tiap-tipa method controller tidak perlu lagi di berikan annotation `@ResponseBody`, karena Spring Web Mvc akan selalu mengganggap semua return value dari method controller akan diangap sebagai response Body.  
+
+``` java
+@RestController
+public class WishlistController {
+    
+    private final List<String> wishlist = new ArrayList<String>();
+
+    @GetMapping(path = "/wishlist")
+    public List<String> addTodo(@RequestParam(value = "wishlist", required = true) String wishlist) {
+        this.wishlist.add(wishlist);
+        return List.of(wishlist);
+    }
+
+    @GetMapping(path = "/wishlists")
+    public List<String> getAllTodo() {
+        return this.wishlist;
+    }
+}
+```
+
+``` java
+@SpringBootTest(classes = SpringWebMvcApplication.class) @AutoConfigureMockMvc
+public class ApplicationTes2 {
+
+    private @Autowired MockMvc mockMvc;
+
+    private @Autowired ObjectMapper objectMapper;
+
+    @Test
+    public void testWishlistController() throws Exception{
+        this.mockMvc.perform(
+            get("/wishlist")
+            .queryParam("wishlist", "Haji tahun 2024")
+            .contentType(MediaType.APPLICATION_JSON)
+        ).andExpectAll(
+            status().isOk()
+        ).andDo(result -> {
+            List<String> response = this.objectMapper.readValue(result.getResponse().getContentAsString(), new TypeReference<List<String>>(){});
+            Assertions.assertNotNull(response);
+            Assertions.assertEquals("Haji tahun 2024", response.get(0));
+        });
     }
 }
 ```
