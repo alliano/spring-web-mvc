@@ -4,6 +4,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.net.URI;
 import java.util.List;
 
 import org.hamcrest.Matchers;
@@ -12,12 +13,21 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.RequestEntity;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mvc.springwebmvc.models.AuthenticationRequest;
+import com.mvc.springwebmvc.openFeign.WishlistFeign;
 
 @SpringBootTest(classes = SpringWebMvcApplication.class) @AutoConfigureMockMvc
 public class ApplicationTes2 {
@@ -25,6 +35,10 @@ public class ApplicationTes2 {
     private @Autowired MockMvc mockMvc;
 
     private @Autowired ObjectMapper objectMapper;
+
+    private @Autowired WishlistFeign wishlistFeign;
+
+    private @Autowired RestTemplate restTemplate;
 
     @Test
     public void interceptorTestFaill() throws Exception{
@@ -106,4 +120,47 @@ public class ApplicationTes2 {
             Assertions.assertEquals("Haji tahun 2024", response.get(0));
         });
     }
+
+    @Test
+    public void wishlistFeign(){
+        ResponseEntity<List<String>> wishlist = this.wishlistFeign.addWishlist("Berangkat haji tahun 2024");
+        Assertions.assertNotNull(wishlist);
+        Assertions.assertEquals(HttpStatus.OK, wishlist.getStatusCode());
+        List<String> body = wishlist.getBody();
+        Assertions.assertEquals("Berangkat haji tahun 2024", body.get(0));
+    }
+
+    @Test
+    public void testRestTemplate(){
+        String url = "http://localhost:8080/wishlist?wishlist=jalan%20ke%20swish";
+        RequestEntity<Object> request = new RequestEntity<>(HttpMethod.GET, URI.create(url));
+        ResponseEntity<List<String>> response = this.restTemplate.exchange(request, new ParameterizedTypeReference<List<String>>(){});
+        Assertions.assertNotNull(response);
+        Assertions.assertEquals("jalan ke swish", response.getBody().get(0));
+    }
+
+    @Test
+    public void testRest(){
+        String url = "http://localhost:8080/testRest";
+        HttpHeaders httpHeaders = new HttpHeaders();
+        httpHeaders.setAccept(List.of(MediaType.APPLICATION_JSON));
+        LinkedMultiValueMap<String, Object> form = new LinkedMultiValueMap<>();
+        form.add("name", "Abdillah Alli");
+        RequestEntity<LinkedMultiValueMap<String,Object>> request = new RequestEntity<>(form, httpHeaders, HttpMethod.POST, URI.create(url));
+        ResponseEntity<List<String>> respose = this.restTemplate.exchange(request, new ParameterizedTypeReference<List<String>>(){});
+        Assertions.assertNotNull(respose);
+        Assertions.assertEquals("Abdillah Alli", respose.getBody().get(0));
+    }
+
+    // @Test
+    // public void testRestTemplate(){
+    //     String url = "http://localhost:8080/wishlist";
+    //     HttpHeaders httpHeaders = new HttpHeaders();
+    //     httpHeaders.setAccept(List.of(MediaType.APPLICATION_JSON));
+    //     MultiValueMap<String,Object> form = new LinkedMultiValueMap<String, Object>();
+    //     form.add("wishlist", "Liburan ke swish");
+    //     RequestEntity<MultiValueMap<String,Object>> request = new RequestEntity<>(form, httpHeaders, HttpMethod.POST, URI.create(url));
+    //     ResponseEntity<List<String>> respose = this.restTemplate.exchange(request, new ParameterizedTypeReference<List<String>>(){});
+    //     Assertions.assertEquals(HttpStatus.OK, respose.getStatusCode());
+    // }
 }
