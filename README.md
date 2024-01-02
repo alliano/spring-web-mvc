@@ -1599,3 +1599,117 @@ public class ApplicationTes2 {
     }
 }
 ```
+
+# RestClient
+Saat applikasi Spring Web Mvc kita sudah sangat besar dan kompleks, ada kalanya Applikasi kita butuh terhubung dengan thirdparty Api lainya, misalnya Payment Gateway, dan sebagainya.  
+Untungnya Spring Web Mvc telah menyediakan standar atau cara untuk berkomunikasi dengan thirdparty Api dengan menggunakan `RestTemplate`. 
+
+RestTemplate ini bisa kita gunakan sebagai RestClient, atau sebagai pengirim HttpRequest ke Thirdparty Api.  
+Pada bahasa pemograman Java sebenarnya terdapat banyak sekali RestClient yang bisa kita gunakan, namun yang sangat populer saat ini yaitu OpenFeign dan RestTemplate. Disini kita akan mencoba keduanya.  
+Untuk detal dari keduanya bisa kunjungi disini :  
+* [OpenFeign](https://docs.spring.io/spring-cloud-openfeign/docs/current/reference/html/)
+* [RestTemplate](https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/web/client/RestTemplate.html)
+
+# OpenFeign
+OpenFeign adalah salahsatu deklaratif Restclient yang sangat populer di kalangan java developer.  
+Spring Framwork secara default tidak menambahkan OpenFeign, maka dari itu kita perlu menambahkanya dependency nya terlebih dahulu:  
+``` xml
+<dependency>
+	<groupId>org.springframework.cloud</groupId>
+	<artifactId>spring-cloud-starter-openfeign</artifactId>
+</dependency>
+```
+
+Setelah itu kita perlu meng aktifkan openfeign di main class.  
+``` java
+@SpringBootApplication @EnableFeignClients // mengaktifkan openfeign
+public class SpringWebMvcApplication {
+
+    public static void main(String[] args) {
+		SpringApplication.run(SpringWebMvcApplication.class, args);
+	}
+}
+``` 
+
+Setelah mengaktifkan openfeign, kita bisa membuat deklaratif RestClient dengan cara membuat interface dan diannotasi dengan [`@FeignClient`](https://www.javadoc.io/doc/org.springframework.cloud/spring-cloud-netflix-core/1.3.4.RELEASE/org/springframework/cloud/netflix/feign/EnableFeignClients.html).  
+  
+Pada annotasi `@FeignClient` terdapat property yang harus kita isi, yaitu `url` untuk menentukan url RestApi yang akan di consume.  
+
+``` java
+@FeignClient(url = "http://localhost:8080/", name = "wishlistFeign")
+public interface WishlistFeign { }
+```
+**NOTE:**
+> untuk property name, ini diguakan untuk memberi nama client ini
+
+
+Setelah itu kita bisa mendeklarasikan, method request nya
+``` java
+@FeignClient(url = "http://localhost:8080/", name = "wishlistFeign")
+public interface WishlistFeign {
+
+    @GetMapping(path = "/wishlist")
+    /**
+     * Untuk response nya kita bisa buatkan object yang mengcover result dari request
+     * namun dalam kasus ini result dari Requst kita adalah object List<String>
+     * maka kita busa langsung menggunakanya
+     * */
+    public ResponseEntity<List<String>> addWishlist(@RequestParam(value = "wishlist", required = true) String wishlist);
+    
+}
+```
+
+``` java
+@SpringBootTest(classes = SpringWebMvcApplication.class) @AutoConfigureMockMvc
+public class ApplicationTes2 {
+
+    private @Autowired WishlistFeign wishlistFeign;
+
+    @Test
+    public void wishlistFeign(){
+        ResponseEntity<List<String>> wishlist = this.wishlistFeign.addWishlist("Berangkat haji tahun 2024");
+        Assertions.assertNotNull(wishlist);
+        Assertions.assertEquals(HttpStatus.OK, wishlist.getStatusCode());
+        List<String> body = wishlist.getBody();
+        Assertions.assertEquals("Berangkat haji tahun 2024", body.get(0));
+    }
+}
+```
+
+**NOTE:** *Untuk detail dari OpenFeign, kita akan bahas di chapter terpisah*
+
+# RestTemplate
+Spring Web Mvc by default sudah include RestTemplate, jadi kita tidak perlu menambahkan dependency untuk RestTemplate lagi.  
+  
+Untuk menggunakan RestTemplate, kita harus membuat Bean RestTemplate nya terlebih dahulu. Kita buisa membuat Bean RestTemplate dari Object Bean RestTemplateBuilder(Udah disediakan oleh Spring)
+``` java
+@Configuration
+public class ApplicationConfiguration {
+    
+    @Bean(name = "restTemplate")
+    public RestTemplate restTemplate(RestTemplateBuilder builder) {
+        return builder
+            .setConnectTimeout(Duration.ofSeconds(2L))
+            .setReadTimeout(Duration.ofSeconds(2L))
+            .build();
+    }
+}
+```
+
+Setalah itu kita bisa menggunakan RestTemplate untuk RestClient, RestTemplate memiliki banyak sekali method yang bisa kita gunakan, untuk detail nya bisa kunjungi disini https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/web/client/RestTemplate.html
+``` java
+@SpringBootTest(classes = SpringWebMvcApplication.class) @AutoConfigureMockMvc
+public class ApplicationTes2 {
+    
+    private @Autowired RestTemplate restTemplate;
+
+    @Test
+    public void testRestTemplate(){
+        String url = "http://localhost:8080/wishlist?wishlist=jalan%20ke%20swish";
+        RequestEntity<Object> request = new RequestEntity<>(HttpMethod.GET, URI.create(url));
+        ResponseEntity<List<String>> response = this.restTemplate.exchange(request, new ParameterizedTypeReference<List<String>>(){});
+        Assertions.assertNotNull(response);
+        Assertions.assertEquals("jalan ke swish", response.getBody().get(0));
+    }
+}
+```
