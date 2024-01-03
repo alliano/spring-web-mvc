@@ -131,12 +131,36 @@ public class ApplicationTes2 {
     }
 
     @Test
+    public void getWishlistFeign(){
+        this.wishlistFeign.addWishlist("Berangkat haji tahun 2024");
+        this.wishlistFeign.addWishlist("Jalan Jalan ke Madinah tahun 2024");
+        this.wishlistFeign.addWishlist("Nikah tahun 2024");
+        this.wishlistFeign.addWishlist("freedom financila di tahun 2030");
+        ResponseEntity<List<String>> result = this.wishlistFeign.getWishlists();
+        Assertions.assertTrue(result.getStatusCode().is2xxSuccessful());
+        Assertions.assertTrue(!result.getBody().isEmpty());
+    }
+
+    @Test
     public void testRestTemplate(){
         String url = "http://localhost:8080/wishlist?wishlist=jalan%20ke%20swish";
-        RequestEntity<Object> request = new RequestEntity<>(HttpMethod.GET, URI.create(url));
+        HttpHeaders httpHeaders = new HttpHeaders();
+        httpHeaders.setAccept(List.of(MediaType.APPLICATION_JSON));
+        RequestEntity<Object> request = new RequestEntity<>(httpHeaders, HttpMethod.GET, URI.create(url));
         ResponseEntity<List<String>> response = this.restTemplate.exchange(request, new ParameterizedTypeReference<List<String>>(){});
         Assertions.assertNotNull(response);
         Assertions.assertEquals("jalan ke swish", response.getBody().get(0));
+    }
+
+    @Test
+    public void getWishlistRestTemplate(){
+        URI url = URI.create("http://localhost:8080/wishlists");
+        HttpHeaders httpHeaders = new HttpHeaders();
+        httpHeaders.setAccept(List.of(MediaType.APPLICATION_JSON));
+        RequestEntity<Object> request = new RequestEntity<>(httpHeaders, HttpMethod.GET, url);
+        ResponseEntity<List<String>> response = this.restTemplate.exchange(request, new ParameterizedTypeReference<List<String>>(){});
+        Assertions.assertNotNull(response.getBody());
+        Assertions.assertTrue(response.getStatusCode().is2xxSuccessful());
     }
 
     @Test
@@ -151,6 +175,7 @@ public class ApplicationTes2 {
         Assertions.assertNotNull(respose);
         Assertions.assertEquals("Abdillah Alli", respose.getBody().get(0));
     }
+
 
     // @Test
     // public void testRestTemplate(){
