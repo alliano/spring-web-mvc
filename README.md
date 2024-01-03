@@ -1734,3 +1734,64 @@ public class ApplicationTes2 {
     }
 }
 ```
+
+# Error Page
+Saat terjadi error, misalnya :  
+* Internal Server error 
+* Resource Not Found
+* RuntimeException
+* dan sebagainya
+
+Spring akan menampilkan detail error tersebut pada browser,  
+![errorPage](./src/main/resources/images/pageerr.png)  
+ saat applikasi spring kita sudah selesai di develop dan akan masuk ke mode production lebih baik error yang terjadi pada system applikasi spring jangan di tampilkan di browser, karena error tersebut bisa dimanfaatkan oleh pihak yang tidak bertanggung jawab.  
+  
+By default saat terjadi error spring akan membaca path url `/error`, jika path url `/error` tidak ada maka spring akan menampilkan default error page di browser.  
+  
+Untuk melakukan custom error page di Spring Web Mvc, kita harus mengimplementasik interface [`ErrorController`](https://docs.spring.io/spring-boot/docs/2.0.0.RELEASE/api/org/springframework/boot/web/servlet/error/ErrorController.html)   
+Setelah itu kita buatkan sebuah controller dengan path url `/error`, setelah membuat path url `/error` kita harus menonaktifkan default error page pada `application.properties`
+``` properties
+server.error.whitelabel.enabled=false
+```
+  
+Misalnya disini saya memiliki file html yang disimpan di `resources/pages`  
+![error](./src/main/resources/images/errorPage.png) 
+``` html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Error</title>
+</head>
+<body>
+    <h1>Error</h1>
+    <p>Status : $StatusCode</p>
+    <p>Message : $Message</p>
+</body>
+</html>
+``` 
+Yangmana file tersebut akan dibaca oleh error custom contrroler yang kita buat ketika Error terjadi.
+
+``` java
+@Controller
+public class ErrorPageCustomController implements ErrorController {
+    
+    @RequestMapping(path = "/error") @SneakyThrows
+    public ResponseEntity<?> error(HttpServletRequest request) {
+        Optional<Object> statusCode = Optional.ofNullable(request.getAttribute(RequestDispatcher.ERROR_STATUS_CODE));
+        String errorMessage = (String)request.getAttribute(RequestDispatcher.ERROR_MESSAGE);
+        File file = ResourceUtils.getFile("classpath:pages/errorPage.html");
+        String raw = new String(Files.readAllBytes(Path.of(file.getPath())));
+        String html = raw.replace("$StatusCode", statusCode.get().toString()).replace("$Message", errorMessage);
+        return ResponseEntity.status((Integer)statusCode.get()).body(html);
+    }
+}
+```
+Maka ketika terjadi error, yang di tampilkan adalah custom error yang telah kita buat  
+![errorCustom](/src/main/resources/images/errorCustom.png)
+
+
+
+
+
