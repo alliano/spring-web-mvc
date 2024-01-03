@@ -13,4 +13,6 @@ public interface WishlistFeign {
     @GetMapping(path = "/wishlist")
     public ResponseEntity<List<String>> addWishlist(@RequestParam(value = "wishlist", required = true) String wishlist);
     
+    @GetMapping(path = "wishlists")
+    public ResponseEntity<List<String>> getWishlists();
 }
